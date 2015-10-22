@@ -2,6 +2,7 @@
 
 int ExtractPointData(std::string vtkLabelFile, std::string labelNameInfo, std::string arrayName)
 {
+    std::cout<<" Start ExtractPointData..."<<std::endl;
     // ReadFile vtkLabelFile
     vtkSmartPointer< vtkPolyDataReader > reader = vtkSmartPointer< vtkPolyDataReader >::New() ;
     vtkSmartPointer< vtkPolyData > polyData = vtkSmartPointer< vtkPolyData >::New() ;
@@ -35,17 +36,14 @@ int ExtractPointData(std::string vtkLabelFile, std::string labelNameInfo, std::s
         return EXIT_FAILURE;
     }
 
-
     int arrayType = pointdata->GetArray(arrayId)->GetNumberOfComponents();
-
+    std::cout<<"  Array name : "<<arrayName<<"\n  Number of components : "<<arrayType<<std::endl;
     //OutputFile
     std::ofstream outputFile;
-    std::string fileTittle = labelNameInfo;
-    fileTittle += ".txt";
-    outputFile.open(fileTittle.c_str(),std::ofstream::out);
+    outputFile.open(labelNameInfo.c_str(),std::ofstream::out);
     if (outputFile.good())
     {
-        outputFile << "#!ascii file from ExtractPointData tool \n";
+        outputFile << "#Text file containing label name information for each point - output of ExtractPointData tool \n";
 
         //Write in the file all labels corresponding to each points - in the same order
         for(vtkIdType j = 0; j < polyData->GetNumberOfPoints(); j++)
@@ -54,7 +52,7 @@ int ExtractPointData(std::string vtkLabelFile, std::string labelNameInfo, std::s
             pointdata->GetArray(arrayId)->GetTuple(j,vec);
             for(int k = 0 ; k < arrayType; k++)
             {
-               outputFile << vec[k] <<" ";
+                outputFile << vec[k] <<" ";
             }
             outputFile <<"\n";
         }
@@ -65,17 +63,84 @@ int ExtractPointData(std::string vtkLabelFile, std::string labelNameInfo, std::s
         std::cout << "Unable to open file"<<std::endl;
         return EXIT_FAILURE;
     }
+    std::cout<<" ExtractPointData Done !\n"<<std::endl;
     return EXIT_SUCCESS;
 }
 
 int TranslateToLabelNumber(std::string labelNameInfo, std::string labelNumberInfo)
 {
-    //std::ifstream inputfile(labelNameInfo);
+    std::cout<<" Start TranslateToLabelNumber..."<<std::endl;
+
+    std::ifstream inputFile;
+    inputFile.open(labelNameInfo.c_str(), std::ios::in);
+    std::ofstream outputFile;
+    outputFile.open(labelNumberInfo.c_str() , std::ios::out);
+    std::ofstream logFile;
+    logFile.open("logLabelTable" , std::ios::out);
+
+    std::string labelLine;
+    //Define map containing labels and a list of points associated to them
+    std::map<std::string, int> labelMap;
+    //Map iterator
+    std::map< std::string , int >::const_iterator mit,mend;
+    int labelNumber=0;
+    //Extract labels and points associated
+    if(inputFile) //file can be open
+    {
+        if(outputFile.good())
+        {
+            outputFile << "#Text file containing label number information for each point - output of TranslateToLabelNumber tool \n";
+            getline(inputFile,labelLine); //format line
+            getline(inputFile,labelLine);    //first labelName
+            do
+            {
+                std::string newlabel=labelLine;
+                if(labelMap.find(labelLine)!=labelMap.end())
+                {
+                    outputFile << labelMap[newlabel]<<"\n";
+                }
+                else
+                {
+                    labelNumber++;
+                    labelMap[newlabel]=labelNumber;
+                    outputFile << labelMap[newlabel]<<"\n";
+                }
+                getline(inputFile,labelLine);
+            }while(!inputFile.eof());
+
+        }
+        else
+        {
+            std::cout<<"Cannot open  outputfile "<< labelNumberInfo<< std::endl;
+            return EXIT_FAILURE;
+        }
+        outputFile.close();
+
+        if(logFile.good())
+        {
+            logFile << "Matching table between labels names and labels numbers \n";
+            for(mit=labelMap.begin(),mend=labelMap.end();mit!=mend;++mit)
+            {
+                logFile << mit->first << " : "<< mit->second << "\n";
+            }
+        }
+        logFile.close();
+        std::cout<<"  Number of labels : "<<labelNumber<<std::endl;
+    }
+    else
+    {
+        std::cout<<"Cannot open the inputfile "<<std::endl;
+        return EXIT_FAILURE;
+    }
+    std::cout<<" TranslateToLabelNumber Done !\n"<<std::endl;
     return EXIT_SUCCESS;
 }
 
 int CreateSurfaceLabelFiles(std::string vtkFile, std::string labelNumberInfo)
 {
+    //Check nb point vtkFile = nb point labelNumber
+
+
     return EXIT_SUCCESS;
 }
 
@@ -91,88 +156,82 @@ int main ( int argc, char *argv[] )
     else if(extractPointData==1 && translateToLabelNumber==0 && createSurfaceLabelFiles==0)
     {
         std::cout<<"Run ExtractPointData tool ..."<<std::endl;
-        if(!vtklabelFile.empty() && !labelnameInfo.empty() && !arrayName.empty())
+        if(!vtkLabelFile.empty() && !labelNameInfo.empty() && !arrayName.empty())
         {
-            ExtractPointData(vtklabelFile, labelnameInfo, arrayName);
-            return EXIT_SUCCESS;
+            ExtractPointData(vtkLabelFile, labelNameInfo, arrayName);
         }
         else
         {
-            std::cout<<"You need to specify --vtklabelFile AND --arrayName AND --labelnameInfo "<<std::endl;
+            std::cout<<"You need to specify --vtkLabelFile AND --arrayName AND --labelNameInfo "<<std::endl;
             return EXIT_FAILURE;
         }
     }
     else if (extractPointData==1 && translateToLabelNumber==1 && createSurfaceLabelFiles==0)
     {
         std::cout<<"Run ExtractPointData and TranslateToLabelNumber tools ..."<<std::endl;
-        if(!vtklabelFile.empty() && !labelnameInfo.empty() && !labelnumberInfo.empty() && !arrayName.empty())
+        if(!vtkLabelFile.empty() && !labelNameInfo.empty() && !labelNumberInfo.empty() && !arrayName.empty())
         {
-            ExtractPointData(vtklabelFile, labelnameInfo, arrayName);
-            TranslateToLabelNumber(labelnameInfo, labelnumberInfo);
-            return EXIT_SUCCESS;
+            ExtractPointData(vtkLabelFile, labelNameInfo, arrayName);
+            TranslateToLabelNumber(labelNameInfo, labelNumberInfo);
         }
         else
         {
-            std::cout<<"You need to specify --vtklabelFile AND --arrayName AND --labelnameInfo AND --labelnumberInfo"<<std::endl;
+            std::cout<<"You need to specify --vtkLabelFile AND --arrayName AND --labelNameInfo AND --labelNumberInfo"<<std::endl;
             return EXIT_FAILURE;
         }
     }
     else if (extractPointData==1 && translateToLabelNumber==1 && createSurfaceLabelFiles==1)
     {
         std::cout<<"Run ExtractPointData, TranslateToLabelNumber and CreateSurfaceLabelFiles tools ..."<<std::endl;
-        if(!vtklabelFile.empty() && !labelnameInfo.empty() && !labelnumberInfo.empty() && !vtkFile.empty() && !arrayName.empty())
+        if(!vtkLabelFile.empty() && !labelNameInfo.empty() && !labelNumberInfo.empty() && !vtkFile.empty() && !arrayName.empty())
         {
-            ExtractPointData(vtklabelFile, labelnameInfo, arrayName);
-            TranslateToLabelNumber(labelnameInfo, labelnumberInfo);
-            CreateSurfaceLabelFiles(vtkFile, labelnumberInfo);
-            return EXIT_SUCCESS;
+            ExtractPointData(vtkLabelFile, labelNameInfo, arrayName);
+            TranslateToLabelNumber(labelNameInfo, labelNumberInfo);
+            CreateSurfaceLabelFiles(vtkFile, labelNumberInfo);
         }
         else
         {
-            std::cout<<"You need to specify --vtklabelFile AND --arrayName AND --labelnameInfo AND --labelnumberInfo AND --vtkFile "<<std::endl;
+            std::cout<<"You need to specify --vtkLabelFile AND --arrayName AND --labelNameInfo AND --labelNumberInfo AND --vtkFile "<<std::endl;
             return EXIT_FAILURE;
         }
     }
     else if (extractPointData==0 && translateToLabelNumber==1 && createSurfaceLabelFiles==0)
     {
         std::cout<<"Run TranslateToLabelNumber tool ..."<<std::endl;
-        if(!labelnameInfo.empty() && !labelnumberInfo.empty())
+        if(!labelNameInfo.empty() && !labelNumberInfo.empty())
         {
-            TranslateToLabelNumber(labelnameInfo, labelnumberInfo);
-            return EXIT_SUCCESS;
+            TranslateToLabelNumber(labelNameInfo, labelNumberInfo);
         }
         else
         {
-            std::cout<<"You need to specify --labelnameInfo AND --labelnumberInfo"<<std::endl;
+            std::cout<<"You need to specify --labelNameInfo AND --labelNumberInfo"<<std::endl;
             return EXIT_FAILURE;
         }
     }
     else if (extractPointData==0 && translateToLabelNumber==1 && createSurfaceLabelFiles==1)
     {
         std::cout<<"Run TranslateToLabelNumber and CreateSurfaceLabelFiles tools ..."<<std::endl;
-        if(!labelnameInfo.empty() && !labelnumberInfo.empty() && !vtkFile.empty())
+        if(!labelNameInfo.empty() && !labelNumberInfo.empty() && !vtkFile.empty())
         {
-            TranslateToLabelNumber(labelnameInfo, labelnumberInfo);
-            CreateSurfaceLabelFiles(vtkFile, labelnumberInfo);
-            return EXIT_SUCCESS;
+            TranslateToLabelNumber(labelNameInfo, labelNumberInfo);
+            CreateSurfaceLabelFiles(vtkFile, labelNumberInfo);
         }
         else
         {
-            std::cout<<"You need to specify --labelnameInfo AND --labelnumberInfo AND --vtkFile "<<std::endl;
+            std::cout<<"You need to specify --labelNameInfo AND --labelNumberInfo AND --vtkFile "<<std::endl;
             return EXIT_FAILURE;
         }
     }
     else if (extractPointData==0 && translateToLabelNumber==0 && createSurfaceLabelFiles==1)
     {
         std::cout<<"Run CreateSurfaceLabelFiles tool ..."<<std::endl;
-        if(!labelnumberInfo.empty() && !vtkFile.empty())
+        if(!labelNumberInfo.empty() && !vtkFile.empty())
         {
-            CreateSurfaceLabelFiles(vtkFile, labelnumberInfo);
-            return EXIT_SUCCESS;
+            CreateSurfaceLabelFiles(vtkFile, labelNumberInfo);
         }
         else
         {
-            std::cout<<"You need to specify --labelnumberInfo AND --vtkFile "<<std::endl;
+            std::cout<<"You need to specify --labelNumberInfo AND --vtkFile "<<std::endl;
             return EXIT_FAILURE;
         }
     }
@@ -181,6 +240,6 @@ int main ( int argc, char *argv[] )
         std::cout<<"Wrong call";
         return EXIT_FAILURE;
     }
-
+    std::cout<<"Done !"<<std::endl;
     return EXIT_SUCCESS ;
 }

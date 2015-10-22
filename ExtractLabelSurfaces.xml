@@ -13,7 +13,7 @@
       <longflag>extractPointData</longflag>
       <label>Extract Point Data</label>
       <default>false</default>
-      <description>Extract Point Dat from the vtk file containing labels : required flag --vtklabelFile </description>
+      <description>Extract Point Data from the vtk file containing labels : required flags --vtklabelFile --arrayName/-a and --labelNameInfo </description>
     </boolean>
 	 
 	 <boolean>
@@ -21,7 +21,7 @@
       <longflag>translateToLabelNumber</longflag>
       <label>Translate To Label Number</label>
       <default>false</default>
-      <description>Translate labelNameInformation file to labelNumberInformation file : required flag --labelnameInfo  </description>
+      <description>Translate labelNameInformation file to labelNumberInformation file : required flags --labelNameInfo  and --labelNumberInfo</description>
     </boolean>
 	
 	<boolean>
@@ -29,14 +29,14 @@
       <longflag>createSurfaceLabelFiles</longflag>
       <label>Create Surface Label Files</label>
       <default>false</default>
-      <description>Create surfaces corresponding to each label : required flags --labelnumberInfo and --vtkFile </description>
+      <description>Create surfaces corresponding to each label : required flags --labelNumberInfo and --vtkFile </description>
     </boolean>
     
    <geometry fileExtensions="vtk" multiple="false" >
-		<name>vtklabelFile</name>
+		<name>vtkLabelFile</name>
 		<label>VTK label File</label>
-		<longflag>vtklabelFile</longflag>
-		<description>surface with labels information</description>
+		<longflag>vtkLabelFile</longflag>
+		<description>surface with labels information : myfile.vtk file</description>
 	 </geometry>
 	 
 	 <string>
@@ -49,16 +49,16 @@
     
     
 	<file fileExtensions="txt" >
-     <name >labelnameInfo</name>
+     <name >labelNameInfo</name>
      <label>Load label info list by name </label>
-     <longflag>labelnameInfo</longflag>
+     <longflag>labelNameInfo</longflag>
      <description>list containing label information by name</description>
    </file>
     
    <file fileExtensions="txt" >
-     <name >labelnumberInfo</name>
+     <name >labelNumberInfo</name>
      <label>Load label info list by number </label>
-     <longflag>labelnumberInfo</longflag>
+     <longflag>labelNumberInfo</longflag>
      <description>list containing label information by number</description>
    </file>
     
