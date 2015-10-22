@@ -3,25 +3,13 @@
 int ExtractPointData(std::string vtkLabelFile, std::string labelNameInfo, std::string arrayName)
 {
     std::cout<<" Start ExtractPointData..."<<std::endl;
-    // ReadFile vtkLabelFile
-    vtkSmartPointer< vtkPolyDataReader > reader = vtkSmartPointer< vtkPolyDataReader >::New() ;
-    vtkSmartPointer< vtkPolyData > polyData = vtkSmartPointer< vtkPolyData >::New() ;
-    reader->SetFileName( vtkLabelFile.c_str() ) ;
-    reader->OpenVTKFile();
-    reader->Update() ;
-    polyData = reader->GetOutput() ;
-    //Checked if surface file with color no containing errors
-    if (reader->GetErrorCode() !=0 )
-    {
-        std::cerr << "Unable to open input file: " << vtkLabelFile.c_str() << std::endl ;
-        return EXIT_FAILURE ;
-    }
-
-    //Search array name specified exist in this vtk file
+    //Read VTK file
+    vtkSmartPointer< vtkPolyData > polyData = ReadVTKFile(vtkLabelFile);
+    //Checked that array name specified exists in this vtk file
     vtkPointData* pointdata =  polyData->GetPointData();
     int arrayId=0;
     bool arrayFound=false;
-    //Search all array in File
+    //Search all arrays in file
     for(unsigned i = 0; i < pointdata->GetNumberOfArrays(); i++)
     {
         if(pointdata->GetArrayName(i)==arrayName)
@@ -85,7 +73,7 @@ int TranslateToLabelNumber(std::string labelNameInfo, std::string labelNumberInf
     std::map< std::string , int >::const_iterator mit,mend;
     int labelNumber=0;
     //Extract labels and points associated
-    if(inputFile) //file can be open
+    if(inputFile.good()) //file can be open
     {
         if(outputFile.good())
         {
@@ -115,34 +103,95 @@ int TranslateToLabelNumber(std::string labelNameInfo, std::string labelNumberInf
             return EXIT_FAILURE;
         }
         outputFile.close();
-
-        if(logFile.good())
-        {
-            logFile << "Matching table between labels names and labels numbers \n";
-            for(mit=labelMap.begin(),mend=labelMap.end();mit!=mend;++mit)
-            {
-                logFile << mit->first << " : "<< mit->second << "\n";
-            }
-        }
-        logFile.close();
-        std::cout<<"  Number of labels : "<<labelNumber<<std::endl;
     }
     else
     {
         std::cout<<"Cannot open the inputfile "<<std::endl;
         return EXIT_FAILURE;
     }
+    //Write matching table between labels names and labels numbers
+    if(logFile.good())
+    {
+        logFile << "Matching table between labels names and labels numbers \n";
+        for(mit=labelMap.begin(),mend=labelMap.end();mit!=mend;++mit)
+        {
+            logFile << mit->first << " : "<< mit->second << "\n";
+        }
+    }
+    else
+    {
+        std::cout<<"Cannot open logFile"<< labelNumberInfo<< std::endl;
+        return EXIT_FAILURE;
+    }
+    logFile.close();
+    std::cout<<"  Number of labels : "<<labelNumber<<std::endl;
     std::cout<<" TranslateToLabelNumber Done !\n"<<std::endl;
     return EXIT_SUCCESS;
 }
 
 int CreateSurfaceLabelFiles(std::string vtkFile, std::string labelNumberInfo)
 {
-    //Check nb point vtkFile = nb point labelNumber
+     std::cout<<" Start CreateSurfaceLabelFiles..."<<std::endl;
+     //Read labelInformation file
+     std::ifstream inputFile;
+     inputFile.open(labelNumberInfo.c_str(), std::ios::in);
+     std::string labelLine;
+     int nbLinesLabels=0;
+     if(inputFile.good())
+     {
+         getline(inputFile,labelLine); //get information line
+         do
+         {
+             getline(inputFile,labelLine);
+             if(!labelLine.empty())
+             {
+                 nbLinesLabels++;
+             }
+         }while(!inputFile.eof());
+     }
+     inputFile.close();
 
+     // ReadFile vtkFile
 
+     vtkSmartPointer< vtkPolyData > polyData = ReadVTKFile(vtkFile);
+     int nbPoints=0;
+     nbPoints=polyData->GetNumberOfPoints();
+     //Check nb point vtkFile = nb point labelNumber
+     if(nbPoints!=nbLinesLabels)
+     {
+         std::cout<<"Number of points in the VTK file aren't match with the number of labels information in the text file"<<std::endl;
+         return EXIT_FAILURE;
+     }
+     else
+     {
+        //Create labels surfaces files
+
+     }
+     std::cout<<" CreateSurfaceLabelFiles Done !\n"<<std::endl;
     return EXIT_SUCCESS;
 }
+
+vtkSmartPointer<vtkPolyData> ReadVTKFile(std::string vtkFile)
+{
+    // ReadFile vtkFile
+    vtkSmartPointer< vtkPolyDataReader > reader = vtkSmartPointer< vtkPolyDataReader >::New() ;
+    vtkSmartPointer< vtkPolyData > polyData = vtkSmartPointer< vtkPolyData >::New() ;
+    reader->SetFileName( vtkFile.c_str() ) ;
+    reader->OpenVTKFile();
+    reader->Update() ;
+    polyData = reader->GetOutput() ;
+    //Checked if surface file with color no containing errors
+    if (reader->GetErrorCode() !=0 )
+    {
+        std::cerr << "Unable to open input file: " << vtkFile.c_str() << std::endl ;
+        return 0;
+    }
+    else
+    {
+      return polyData;
+    }
+}
+
 
 int main ( int argc, char *argv[] )
 {
