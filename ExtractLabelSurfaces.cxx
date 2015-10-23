@@ -138,6 +138,8 @@ int CreateSurfaceLabelFiles(std::string vtkFile, std::string labelNumberInfo)
     inputFile.open(labelNumberInfo.c_str(), std::ios::in);
     std::string labelLine;
     int nbLinesLabels=0;
+    std::vector<std::string> labelList;
+
     //Count number of label informations and checked if file can be open
     if(inputFile.good())
     {
@@ -145,9 +147,11 @@ int CreateSurfaceLabelFiles(std::string vtkFile, std::string labelNumberInfo)
         do
         {
             getline(inputFile,labelLine);
+
             if(!labelLine.empty())
             {
                 nbLinesLabels++;
+
             }
         }while(!inputFile.eof());
     }
@@ -157,13 +161,12 @@ int CreateSurfaceLabelFiles(std::string vtkFile, std::string labelNumberInfo)
         return EXIT_FAILURE;
     }
     inputFile.close();
-
     // ReadFile vtkFile
     vtkSmartPointer< vtkPolyData > polyData = vtkSmartPointer<vtkPolyData>::New();
     polyData = ReadVTKFile(vtkFile);
-
     int nbPoints=0;
     nbPoints=polyData->GetNumberOfPoints();
+
     //Check nb point vtkFile = nb point labelNumber
     if(nbPoints!=nbLinesLabels)
     {
@@ -172,10 +175,10 @@ int CreateSurfaceLabelFiles(std::string vtkFile, std::string labelNumberInfo)
     }
 
     //Add new array in vtkFile containing labelId informations for each points
-    inputFile.open(labelNumberInfo.c_str(), std::ios::in);
     vtkSmartPointer<vtkIntArray> index = vtkSmartPointer<vtkIntArray>::New();
     index->SetNumberOfComponents(1);
     index->SetName("indexLabel");
+    inputFile.open(labelNumberInfo.c_str(), std::ios::in);
     if(inputFile.good())
     {
         getline(inputFile,labelLine); //format line // Need to be checked
@@ -183,80 +186,61 @@ int CreateSurfaceLabelFiles(std::string vtkFile, std::string labelNumberInfo)
 
         for(int i=0 ; i < nbPoints ; i++)
         {
+            std::vector<std::string>::iterator it;
             getline(inputFile,labelLine); //format line // Need to be checked
             int valIndex = atoi(labelLine.c_str()) ;
-            std::cout<<valIndex<<std::endl;
-            index->InsertNextValue(valIndex);
+            it = find(labelList.begin(), labelList.end(),labelLine);
+            if(it == labelList.end())
+            {
+                labelList.push_back(labelLine);
+            }
+            index->InsertNextValue(valIndex) ;
         }
     }
     else
     {
-        std::cout<<"Cannot open the label file "<<std::endl;
+        std::cout<<"Cannot open the label file "<<std::endl ;
         return EXIT_FAILURE;
     }
     inputFile.close();
-    polyData->GetPointData()->AddArray(index);
-    //Create labels surfaces files
-    //Define map containing labels and a list of points associated to them
-    std::map< std::string , std::list<int> > labelMap;
-    //Map iterator
-    std::map< std::string , std::list<int> >::const_iterator mit,mend;
-    //List iteration
-    std::list<int>::const_iterator lit,lend;
-    int idPoint=0; //point id
+    polyData->GetPointData()->AddArray(index) ;
 
-    //Extract labels and points associated
-    if(inputFile.good())
+    //Get array "indexLabel" id
+    vtkPointData* pointdata =  polyData->GetPointData();
+    int arrayId = 0;
+    for(unsigned i = 0; i < pointdata->GetNumberOfArrays(); i++)
     {
-        getline(inputFile,labelLine); //format line // Need to be checked
-        getline(inputFile,labelLine);    //first RGB value
-        do
+        if(pointdata->GetArrayName(i)=="indexLabel")
         {
-            std::string newlabelRGB=labelLine;
-            labelMap[newlabelRGB].push_back(idPoint);
-            getline(inputFile,labelLine);
-            idPoint++;
-        }while(!inputFile.eof());
+            arrayId = i ;
+        }
     }
-    else
+    //Threshold the polyData by each each
+    for(int k=0 ; k < labelList.size() ; k++)
     {
-        std::cout<<"Hello"<<std::endl;
-
-        std::cout<<"Cannot open the label file "<<std::endl;
-        return EXIT_FAILURE;
-    }
-
-    for(mit=labelMap.begin(),mend=labelMap.end();mit!=mend;++mit)
-    {
-        std::ofstream outputFile;
-        std::string labelName = mit->first;
-
-        //Rename label file to create
-        replace(labelName.begin(),labelName.end(),' ','_');
-        labelName += ".asc";
-
-        //Write the ASCII file corresponding to one surface / one label
-        outputFile.open(labelName.c_str() , std::ios::out);
+        vtkSmartPointer<vtkThresholdPoints> threshold = vtkSmartPointer<vtkThresholdPoints>::New();
+        threshold->SetInputData(polyData) ;
+        threshold->ThresholdBetween(k+0.5,k+1);
+        threshold->SetInputArrayToProcess(arrayId,0,0, vtkDataObject::FIELD_ASSOCIATION_POINTS, "indexLabel");
+        threshold->Update() ;
+        vtkPolyData* thresholdedPolydata = threshold->GetOutput();
+        std::ofstream outputFile ;
+        std::string labelName;
+        labelName=labelList.at(k) ;
+        labelName += ".asc" ;
+        outputFile.open(labelName.c_str() ,std::ios::out) ;
         if(outputFile.good())
         {
             outputFile << "#!ascii - generated by CreateLabelFiles project \n";
-            outputFile << mit->second.size() << " 0\n";
-            for(lit=mit->second.begin(),lend=mit->second.end();lit!=lend;++lit)
-            {
-                double p[3];
-                polyData->GetPoint(*lit,p);
-                outputFile << p[0]<< " "<< p[1]<<" "<<p[2]<< " 0 \n";
-            }
+            outputFile << thresholdedPolydata->GetNumberOfPoints() << " "<< thresholdedPolydata->GetNumberOfCells() <<"\n" ;
         }
         else
         {
-            std::cout<<"Cannot open "<< labelName<< std::endl;
+            std::cout<<"Cannot open the label file "<<std::endl;
             return EXIT_FAILURE;
         }
-
         outputFile.close();
     }
-
 
     std::cout<<" CreateSurfaceLabelFiles Done !\n"<<std::endl;
     return EXIT_SUCCESS;

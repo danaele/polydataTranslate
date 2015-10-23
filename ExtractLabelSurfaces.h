@@ -3,7 +3,11 @@
 #include <vtkDataReader.h>
 #include <vtkPolyDataReader.h>
 #include <vtkPolyDataWriter.h>
+#include <vtkThreshold.h>
+#include <vtkThresholdPoints.h>
 #include <string>
+#include <vector>
+#include <algorithm>
 #include <iostream>
 #include <fstream>
 #include <vtkPointData.h>
