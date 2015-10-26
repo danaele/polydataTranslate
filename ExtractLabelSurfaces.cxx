@@ -2,34 +2,34 @@
 
 int ExtractPointData(std::string vtkLabelFile, std::string labelNameInfo, std::string arrayName)
 {
-    std::cout<<" Start ExtractPointData..."<<std::endl;
+    std::cout<<" Start ExtractPointData..."<<std::endl ;
     //Read VTK file
     vtkSmartPointer< vtkPolyData > polyData = vtkSmartPointer< vtkPolyData >::New() ;
-    polyData = ReadVTKFile(vtkLabelFile);
+    polyData = ReadVTKFile(vtkLabelFile) ;
     //Checked that array name specified exists in this vtk file
-    vtkPointData* pointdata =  polyData->GetPointData();
-    int arrayId=0;
+    vtkPointData* pointdata =  polyData->GetPointData() ;
+    int arrayId=0 ;
     bool arrayFound=false;
     //Search all arrays in file
     for(unsigned i = 0; i < pointdata->GetNumberOfArrays(); i++)
     {
         if(pointdata->GetArrayName(i)==arrayName)
         {
-            arrayId=i;
-            arrayFound=true;
+            arrayId=i ;
+            arrayFound=true ;
         }
     }
     if(arrayFound!=true)
     {
-        std::cout<<"Array containing label specified not found"<<std::endl;
-        return EXIT_FAILURE;
+        std::cout<<"Array containing label specified not found"<<std::endl ;
+        return EXIT_FAILURE ;
     }
 
-    int arrayType = pointdata->GetArray(arrayId)->GetNumberOfComponents();
-    std::cout<<"  Array name : "<<arrayName<<"\n  Number of components : "<<arrayType<<std::endl;
+    int arrayType = pointdata->GetArray(arrayId)->GetNumberOfComponents() ;
+    std::cout<<"  Array name : "<<arrayName<<"\n  Number of components : "<<arrayType<<std::endl ;
     //OutputFile
-    std::ofstream outputFile;
-    outputFile.open(labelNameInfo.c_str(),std::ofstream::out);
+    std::ofstream outputFile ;
+    outputFile.open(labelNameInfo.c_str(),std::ofstream::out) ;
     if (outputFile.good())
     {
         outputFile << "#Text file containing label name information for each point - output of ExtractPointData tool \n";
@@ -37,23 +37,23 @@ int ExtractPointData(std::string vtkLabelFile, std::string labelNameInfo, std::s
         //Write in the file all labels corresponding to each points - in the same order
         for(vtkIdType j = 0; j < polyData->GetNumberOfPoints(); j++)
         {
-            double vec[arrayType];  //search type
-            pointdata->GetArray(arrayId)->GetTuple(j,vec);
+            double vec[arrayType] ;  //search type
+            pointdata->GetArray(arrayId)->GetTuple(j,vec) ;
             for(int k = 0 ; k < arrayType; k++)
             {
-                outputFile << vec[k] <<" ";
+                outputFile << vec[k] <<" " ;
             }
-            outputFile <<"\n";
+            outputFile <<"\n" ;
         }
-        outputFile.close();
+        outputFile.close() ;
     }
     else
     {
-        std::cout << "Unable to open file"<<std::endl;
-        return EXIT_FAILURE;
+        std::cout << "Unable to open file"<<std::endl ;
+        return EXIT_FAILURE ;
     }
-    std::cout<<" ExtractPointData Done !\n"<<std::endl;
-    return EXIT_SUCCESS;
+    std::cout<<" ExtractPointData Done !\n"<<std::endl ;
+    return EXIT_SUCCESS ;
 }
 
 int TranslateToLabelNumber(std::string labelNameInfo, std::string labelNumberInfo)
@@ -139,6 +139,8 @@ int CreateSurfaceLabelFiles(std::string vtkFile, std::string labelNumberInfo)
     std::string labelLine;
     int nbLinesLabels=0;
     std::vector<std::string> labelList;
+    //List of polygons
+    vtkSmartPointer<vtkIdList> cellIdList = vtkSmartPointer<vtkIdList>::New() ;
 
     //Count number of label informations and checked if file can be open
     if(inputFile.good())
@@ -204,7 +206,6 @@ int CreateSurfaceLabelFiles(std::string vtkFile, std::string labelNumberInfo)
     }
     inputFile.close();
     polyData->GetPointData()->AddArray(index) ;
-
     //Get array "indexLabel" id
     vtkPointData* pointdata =  polyData->GetPointData();
     int arrayId = 0;
@@ -215,24 +216,65 @@ int CreateSurfaceLabelFiles(std::string vtkFile, std::string labelNumberInfo)
             arrayId = i ;
         }
     }
-    //Threshold the polyData by each each
+    //Threshold the polyData
     for(int k=0 ; k < labelList.size() ; k++)
     {
-        vtkSmartPointer<vtkThresholdPoints> threshold = vtkSmartPointer<vtkThresholdPoints>::New();
-        threshold->SetInputData(polyData) ;
-        threshold->ThresholdBetween(k+0.5,k+1);
-        threshold->SetInputArrayToProcess(arrayId,0,0, vtkDataObject::FIELD_ASSOCIATION_POINTS, "indexLabel");
-        threshold->Update() ;
-        vtkPolyData* thresholdedPolydata = threshold->GetOutput();
+        //Threshold points
+        vtkSmartPointer<vtkThresholdPoints> thresholdPoints= vtkSmartPointer<vtkThresholdPoints>::New() ;
+        thresholdPoints->SetInputData(polyData) ;
+        thresholdPoints->ThresholdBetween(k+0.5,k+1) ;
+        thresholdPoints->SetInputArrayToProcess(arrayId,0,0, vtkDataObject::FIELD_ASSOCIATION_POINTS, "indexLabel") ;
+        thresholdPoints->Update() ;
+        vtkPolyData* thresholdedPolydataPoints = thresholdPoints->GetOutput() ;
+
+        //Threshold cells
+        vtkSmartPointer<vtkThreshold> thresholdCells = vtkSmartPointer<vtkThreshold>::New();
+        //threshold->SetInput(polydata);
+        thresholdCells->SetInputData(polyData);
+        thresholdCells->ThresholdBetween(k+0.5,k+1) ;
+        // doesn't work because the array is not added as SCALARS, i.e. via SetScalars
+        // threshold->SetInputArrayToProcess(0, 0, 0, vtkDataObject::FIELD_ASSOCIATION_CELLS, vtkDataSetAttributes::SCALARS);
+        // use like this:
+        thresholdCells->SetInputArrayToProcess(0, 0, 0, vtkDataObject::FIELD_ASSOCIATION_POINTS, "indexLabel");
+        thresholdCells->Update();
+        vtkUnstructuredGrid* thresholdedPolydataCells = thresholdCells->GetOutput();
+
         std::ofstream outputFile ;
         std::string labelName;
         labelName=labelList.at(k) ;
         labelName += ".asc" ;
+
+        vtkPointData* thresholderPointData =  thresholdedPolydataPoints->GetPointData() ;
         outputFile.open(labelName.c_str() ,std::ios::out) ;
+        //std::cout<<thresholderPointData->GetNumberOfArrays()<<std::endl ;
         if(outputFile.good())
         {
-            outputFile << "#!ascii - generated by CreateLabelFiles project \n";
-            outputFile << thresholdedPolydata->GetNumberOfPoints() << " "<< thresholdedPolydata->GetNumberOfCells() <<"\n" ;
+            outputFile << "#!ascii - generated by CreateLabelFiles project \n" ;
+            outputFile << thresholdedPolydataPoints->GetNumberOfPoints() << " "<< thresholdedPolydataCells->GetNumberOfCells() <<"\n" ;
+            for(vtkIdType i = 0 ; i < thresholdedPolydataPoints->GetNumberOfPoints() ; i++)
+            {
+                double p[3] ;
+                thresholdedPolydataPoints->GetPoint(i,p) ;
+                outputFile << p[0] << " " << p[1] << " " << p[2] <<"\n" ;
+            }
+            for(vtkIdType j = 0; j < thresholdedPolydataCells->GetNumberOfCells(); j++)
+            {
+               thresholdedPolydataCells->GetCellPoints(j,cellIdList) ;
+               int nbComponentCell = 0 ;
+               nbComponentCell=cellIdList->GetNumberOfIds() ;
+               int cellValue[nbComponentCell] ;
+               for(int k=0 ; k < nbComponentCell ; k++)
+               {
+                   cellValue[k]=cellIdList->GetId(k) ;
+                   outputFile << cellValue[k] ;
+                   if(k < nbComponentCell -1)
+                   {
+                       outputFile << " " ;
+                   }
+               }
+               outputFile << "\n" ;
+            }
+
         }
         else
         {
