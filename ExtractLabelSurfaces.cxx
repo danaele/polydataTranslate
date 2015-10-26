@@ -237,12 +237,12 @@ int CreateSurfaceLabelFiles(std::string vtkFile, std::string labelNumberInfo)
         }
     }
     //Threshold the polyData
-    for(int k=0 ; k < labelList.size() ; k++)
+    for(int k=1 ; k < labelList.size() ; k++)
     {
         //Threshold points
         vtkSmartPointer<vtkThresholdPoints> thresholdPoints= vtkSmartPointer<vtkThresholdPoints>::New() ;
         thresholdPoints->SetInputData(polyData) ;
-        thresholdPoints->ThresholdBetween(k+0.5,k+1) ;
+        thresholdPoints->ThresholdBetween(k-0.5,k+.5) ;
         thresholdPoints->SetInputArrayToProcess(arrayId,0,0, vtkDataObject::FIELD_ASSOCIATION_POINTS, "indexLabel") ;
         thresholdPoints->Update() ;
         vtkPolyData* thresholdedPolydataPoints = thresholdPoints->GetOutput() ;
@@ -250,17 +250,29 @@ int CreateSurfaceLabelFiles(std::string vtkFile, std::string labelNumberInfo)
         //Threshold cells
         vtkSmartPointer<vtkThreshold> thresholdCells = vtkSmartPointer<vtkThreshold>::New() ;
         thresholdCells->SetInputData(polyData) ;
-        thresholdCells->ThresholdBetween(k+0.5,k+1) ;
+        thresholdCells->ThresholdBetween(k-0.5,k+.5) ;
         thresholdCells->SetInputArrayToProcess(0, 0, 0, vtkDataObject::FIELD_ASSOCIATION_POINTS, "indexLabel") ;
         thresholdCells->Update() ;
         vtkUnstructuredGrid* thresholdedPolydataCells = thresholdCells->GetOutput() ;
+
+//        vtkSmartPointer<vtkSelection> selection = vtkSmartPointer<vtkSelection>::New();
+//          vtkSmartPointer<vtkSelectionNode> selectionNode = vtkSmartPointer<vtkSelectionNode>::New();
+//          selectionNode->SetContentType(vtkSelectionNode::THRESHOLDS);
+//          selectionNode->SetFieldType(vtkSelectionNode::POINT);
+//          selectionNode->SetSelectionList(index);
+//          selection->AddNode(selectionNode);
+
+//        vtkSmartPointer<vtkExtractSelectedThresholds> extract = vtkSmartPointer<vtkExtractSelectedThresholds>::New();
+//        extract->SetInputData(polyData);
+//        extract->SetInputData(0,selection);
+//        extract->SetInputArrayToProcess(0,0,0, vtkDataObject::FIELD_ASSOCIATION_POINTS, "indexLabel");
+//        extract->Update(); //outputs a vtkUnstructuredGrid
 
         std::ofstream outputFile ;
         std::string labelName ;
         labelName=labelList.at(k) ;
         labelName += ".asc" ;
 
-        vtkPointData* thresholderPointData =  thresholdedPolydataPoints->GetPointData() ;
         outputFile.open(labelName.c_str() ,std::ios::out) ;
         if(outputFile.good())
         {
@@ -270,7 +282,7 @@ int CreateSurfaceLabelFiles(std::string vtkFile, std::string labelNumberInfo)
             {
                 double p[3] ;
                 thresholdedPolydataPoints->GetPoint(i,p) ;
-                outputFile << p[0] << " " << p[1] << " " << p[2] <<"\n" ;
+                outputFile << p[0] << " " << p[1] << " " << p[2] <<" 0\n" ;
             }
             for(vtkIdType j = 0; j < thresholdedPolydataCells->GetNumberOfCells(); j++)
             {
@@ -281,13 +293,9 @@ int CreateSurfaceLabelFiles(std::string vtkFile, std::string labelNumberInfo)
                 for(int k=0 ; k < nbComponentCell ; k++)
                 {
                     cellValue[k]=cellIdList->GetId(k) ;
-                    outputFile << cellValue[k] ;
-                    if(k < nbComponentCell -1)
-                    {
-                        outputFile << " " ;
-                    }
+                    outputFile << cellValue[k] << " " ;
                 }
-                outputFile << "\n" ;
+                outputFile << "0\n" ;
             }
 
         }
