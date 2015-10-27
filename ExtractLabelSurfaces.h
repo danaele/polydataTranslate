@@ -17,11 +17,9 @@
 #include <map>
 #include <iterator>
 #include <ExtractLabelSurfacesCLP.h>
-#include <vtkUnstructuredGridWriter.h>
-#include <vtkExtractSelectedThresholds.h>
 
-#include <vtkSelectionNode.h>
-#include <vtkSelection.h>
+#include <vtksys/SystemTools.hxx> // for MakeDirectory()
+
 int ExtractPointData(std::string vtkLabelFile, std::string labelNameInfo, std::string arrayName) ;
 int TranslateToLabelNumber(std::string labelNameInfo, std::string labelNumberInfo) ;
 int CreateSurfaceLabelFiles(std::string vtkFile, std::string labelNumberInfo) ;

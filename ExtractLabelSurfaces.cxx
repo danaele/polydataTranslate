@@ -255,7 +255,8 @@ int CreateSurfaceLabelFiles(std::string vtkFile, std::string labelNumberInfo)
             arrayId = i ;
         }
     }
-
+    std::string directory = "labelSurfaces" ;
+    vtksys::SystemTools::MakeDirectory(directory) ;
     //Threshold the polyData
     for(int k=0 ; k < labelVect.size() ; k++)
     {
@@ -276,7 +277,8 @@ int CreateSurfaceLabelFiles(std::string vtkFile, std::string labelNumberInfo)
 
         std::ofstream outputFile ;
         std::string labelName ;
-        labelName=labelVect.at(k) ;
+        labelName = directory + '/' ;
+        labelName +=labelVect.at(k) ;
         labelName += ".asc" ;
         outputFile.open(labelName.c_str() ,std::ios::out) ;
 
