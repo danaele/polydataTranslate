@@ -84,6 +84,9 @@ int TranslateToLabelNumber(std::string labelNameInfo, std::string labelNumberInf
     std::map<std::string, int> labelMap ;
     //Map iterator
     std::map< std::string , int >::const_iterator mit,mend ;
+    std::vector<std::pair <int,std::string> > labelPair ;
+    std::vector<std::pair <int,std::string> >::const_iterator vit,vend ;
+
     int labelNumber=0 ;
 
     //Extract labels and points associated
@@ -127,6 +130,14 @@ int TranslateToLabelNumber(std::string labelNameInfo, std::string labelNumberInf
         return EXIT_FAILURE ;
     }
 
+    //Create a vector of pair in order to sort labels by value in the log file
+    for(mit=labelMap.begin(),mend=labelMap.end();mit!=mend;++mit)
+    {
+        labelPair.push_back(std::make_pair(mit->second,mit->first)) ;
+    }
+    std::sort(labelPair.begin(),labelPair.end()) ;
+
+
     //Write matching table between labels names and labels numbers
     std::ofstream logFile  ;
     logFile.open("logLabelTable" , std::ios::out) ;
@@ -134,9 +145,9 @@ int TranslateToLabelNumber(std::string labelNameInfo, std::string labelNumberInf
     if(logFile.good())
     {
         logFile << "Matching table between labels names and labels numbers \n" ;
-        for(mit=labelMap.begin(),mend=labelMap.end();mit!=mend;++mit)
+        for(vit=labelPair.begin(),vend=labelPair.end();vit!=vend;++vit)
         {
-            logFile << mit->first << " : "<< mit->second << "\n" ;
+            logFile << vit->first << " : "<< vit->second << "\n" ;
         }
     }
     else
