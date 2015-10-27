@@ -21,15 +21,9 @@ SEMMacroBuildCLI(
   ADDITIONAL_SRCS ${ExtractLabelSurfaces_SOURCE}
   TARGET_LIBRARIES ${VTK_LIBRARIES}
   )
- 
-if(VTK_LIBRARIES)
-  target_link_libraries(ExtractLabelSurfaces ${VTK_LIBRARIES})
-else()
-  target_link_libraries(ExtractLabelSurfaces vtkHybrid vtkWidgets)
-endif()
 
 if(BUILD_TESTING)
  include(CTest)
- ADD_SUBDIRECTORY(Testing)
+ add_subdirectory(Testing)
 endif()
 

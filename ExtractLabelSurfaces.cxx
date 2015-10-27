@@ -92,8 +92,11 @@ int TranslateToLabelNumber(std::string labelNameInfo, std::string labelNumberInf
         if(outputFile.good())
         {
             outputFile << "#Text file containing label number information for each point - output of TranslateToLabelNumber tool \n" ;
-            getline(inputFile,labelLine) ; //format line
-            getline(inputFile,labelLine) ;    //first labelName
+            do
+            {
+                getline(inputFile,labelLine) ; //get first lines and checked if header of not
+            }while(labelLine[0] == '#');
+
             do
             {
                 std::string newlabel=labelLine ;
@@ -165,16 +168,19 @@ int CreateSurfaceLabelFiles(std::string vtkFile, std::string labelNumberInfo)
     //Count number of label informations and checked if file can be open
     if(inputFile.good())
     {
-        getline(inputFile,labelLine) ; //get information line
         do
         {
-            getline(inputFile,labelLine) ;
+            getline(inputFile,labelLine) ; //get information line
+        }while(labelLine[0] =='#');
 
+        do
+        {
             if(!labelLine.empty())
             {
                 nbLinesLabels++ ;
 
             }
+            getline(inputFile,labelLine) ;
         }while(!inputFile.eof()) ;
     }
     else
@@ -277,19 +283,19 @@ int CreateSurfaceLabelFiles(std::string vtkFile, std::string labelNumberInfo)
                 listIdPoint.push_back(idPointVTK);
             }
 
-//            for(vtkIdType j = 0; j < thresholdedPolydataCells->GetNumberOfCells(); j++)
-//            {
-//                thresholdedPolydataCells->GetCellPoints(j,cellIdList) ;
-//                int nbComponentCell = 0 ;
-//                nbComponentCell=cellIdList->GetNumberOfIds() ;
-//                int cellValue[nbComponentCell] ;
-//                for(int k=0 ; k < nbComponentCell ; k++)
-//                {
-//                    cellValue[k]=cellIdList->GetId(k) ;
-//                    outputFile << cellValue[k] << " " ;
-//                }
-//                outputFile << "0\n" ;
-//            }
+            //            for(vtkIdType j = 0; j < thresholdedPolydataCells->GetNumberOfCells(); j++)
+            //            {
+            //                thresholdedPolydataCells->GetCellPoints(j,cellIdList) ;
+            //                int nbComponentCell = 0 ;
+            //                nbComponentCell=cellIdList->GetNumberOfIds() ;
+            //                int cellValue[nbComponentCell] ;
+            //                for(int k=0 ; k < nbComponentCell ; k++)
+            //                {
+            //                    cellValue[k]=cellIdList->GetId(k) ;
+            //                    outputFile << cellValue[k] << " " ;
+            //                }
+            //                outputFile << "0\n" ;
+            //            }
 
             for(vtkIdType j = 0; j < polyData->GetNumberOfCells(); j++)
             {

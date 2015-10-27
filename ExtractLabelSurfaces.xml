@@ -36,7 +36,7 @@
 		<name>vtkLabelFile</name>
 		<label>VTK label File</label>
 		<longflag>vtkLabelFile</longflag>
-		<description>surface with labels information : myfile.vtk file</description>
+		<description>Surface with labels information ( myfile_withLabel.vtk )</description>
 	 </geometry>
 	 
 	 <string>
@@ -52,21 +52,21 @@
      <name >labelNameInfo</name>
      <label>Load label info list by name </label>
      <longflag>labelNameInfo</longflag>
-     <description>list containing label information by name</description>
+     <description>List containing label information by name</description>
    </file>
     
    <file fileExtensions="txt" >
      <name >labelNumberInfo</name>
      <label>Load label info list by number </label>
      <longflag>labelNumberInfo</longflag>
-     <description>list containing label information by number</description>
+     <description>List containing label information by number</description>
    </file>
     
     <geometry fileExtensions="vtk" multiple="false" >
 		<name>vtkFile</name>
 		<label>VTK File</label>
 		<longflag>vtkFile</longflag>
-		<description>surface from which we extract the different labeled surfaces </description>
+		<description>Surface without label information from which we extract the different labeled surfaces ( myfile.vtk )</description>
 	 </geometry>
 
 </parameters>
