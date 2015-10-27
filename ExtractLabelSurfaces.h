@@ -15,6 +15,7 @@
 #include <vtkPointData.h>
 #include <list>
 #include <map>
+#include <iterator>
 #include <ExtractLabelSurfacesCLP.h>
 #include <vtkUnstructuredGridWriter.h>
 #include <vtkExtractSelectedThresholds.h>
