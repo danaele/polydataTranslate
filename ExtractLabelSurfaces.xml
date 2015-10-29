@@ -20,20 +20,28 @@
 		<description>Prefix added in names of each output files </description>
 	</string> 
 
-   <boolean>
-      <name>createSurfaceLabelFiles</name>
-      <longflag>createSurfaceLabelFiles</longflag>
-      <label>Create Surface Label Files</label>
+    <boolean>
+      <name>overlapping</name>
+      <longflag>overlapping</longflag>
+      <label>overlapping</label>
       <default>false</default>
-      <description>Create surfaces corresponding to each label : required flags --labelNumberInfo and --vtkFile. You can specified a prefix for identify surfaces files (for exemple : lh or rh).</description>
-    </boolean>
+      <description>Reconstruct label surfaces with overlapping </description>
+   </boolean>
     
-    <geometry fileExtensions="vtk" multiple="false" >
-		<name>vtkFile</name>
-		<label>VTK File</label>
-		<longflag>vtkFile</longflag>
-		<description>Surface without label information from which we extract the different labeled surfaces ( myfile.vtk )</description>
+   <geometry fileExtensions="vtk" multiple="false" >
+		 <name>vtkFile</name>
+		 <label>VTK File</label>
+		 <longflag>vtkFile</longflag>
+		 <description>Surface without label information from which we extract the different labeled surfaces ( myfile.vtk )</description>
 	 </geometry>
+	 
+	 <boolean>
+     <name>createSurfaceLabelFiles</name>
+     <longflag>createSurfaceLabelFiles</longflag>
+     <label>Create Surface Label Files</label>
+     <default>false</default>
+     <description>Create surfaces corresponding to each label : required flags --labelNumberInfo and --vtkFile. You can specified a prefix for identify surfaces files (for exemple : lh or rh).</description>
+   </boolean>
 	 
 	 <file fileExtensions="txt" >
      <name >labelNumberInfo</name>

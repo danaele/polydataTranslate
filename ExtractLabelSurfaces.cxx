@@ -14,7 +14,7 @@ int ExtractPointData(std::string vtkLabelFile, std::string labelNameInfo, std::s
     //Checked that array name specified exists in this vtk file
     vtkPointData* pointdata =  polyData->GetPointData() ;
     int arrayId=0 ;
-    bool arrayFound=false;
+    bool arrayFound=false ;
 
     //Search all arrays in file
     for(unsigned i = 0; i < pointdata->GetNumberOfArrays(); i++)
@@ -98,7 +98,7 @@ int TranslateToLabelNumber(std::string labelNameInfo, std::string labelNumberInf
             do
             {
                 getline(inputFile,labelLine) ; //get first lines and checked if header of not
-            }while(labelLine[0] == '#');
+            }while(labelLine[0] == '#') ;
 
             do
             {
@@ -126,7 +126,7 @@ int TranslateToLabelNumber(std::string labelNameInfo, std::string labelNumberInf
     }
     else
     {
-        std::cout<<"Cannot open the inputfile "<<std::endl;
+        std::cout<<"Cannot open the inputfile "<<std::endl ;
         return EXIT_FAILURE ;
     }
 
@@ -139,7 +139,7 @@ int TranslateToLabelNumber(std::string labelNameInfo, std::string labelNumberInf
 
 
     //Write matching table between labels names and labels numbers
-    std::ofstream logFile  ;
+    std::ofstream logFile ;
     logFile.open("logLabelTable" , std::ios::out) ;
 
     if(logFile.good())
@@ -153,17 +153,17 @@ int TranslateToLabelNumber(std::string labelNameInfo, std::string labelNumberInf
     else
     {
         std::cout<<"Cannot open logFile"<< labelNumberInfo<< std::endl ;
-        return EXIT_FAILURE;
+        return EXIT_FAILURE ;
     }
     logFile.close();
 
     std::cout<<"Number of labels : "<<labelNumber<<std::endl ;
     std::cout<<"TranslateToLabelNumber Done !\n"<<std::endl ;
-    return EXIT_SUCCESS;
+    return EXIT_SUCCESS ;
 }
 
 //Tool 3 : CreateSurfaceLabelFiles -> create one ASCII file per label
-int CreateSurfaceLabelFiles( std::string vtkFile , std::string labelNumberInfo , std::string prefix )
+int CreateSurfaceLabelFiles( std::string vtkFile , std::string labelNumberInfo , std::string prefix, bool overlapping )
 {
     std::cout<<"Start CreateSurfaceLabelFiles..."<<std::endl ;
 
@@ -182,7 +182,7 @@ int CreateSurfaceLabelFiles( std::string vtkFile , std::string labelNumberInfo ,
         do
         {
             getline(inputFile,labelLine) ; //get information line
-        }while(labelLine[0] =='#');
+        }while(labelLine[0] =='#') ;
 
         do
         {
@@ -220,13 +220,15 @@ int CreateSurfaceLabelFiles( std::string vtkFile , std::string labelNumberInfo ,
     inputFile.open(labelNumberInfo.c_str(), std::ios::in) ;
     if(inputFile.good())
     {
-        getline(inputFile,labelLine) ; //format line
+        do
+        {
+            getline(inputFile,labelLine) ; //get information line
+        }while(labelLine[0] =='#') ;
         //Create new array containing index label in the vtkFile
 
         for(int i=0 ; i < nbPoints ; i++)
         {
             std::vector<std::string>::iterator it ;
-            getline(inputFile,labelLine); //format line
             int valIndex = atoi(labelLine.c_str()) ;
             it = find(labelVect.begin(), labelVect.end(),labelLine) ;
             if(it == labelVect.end())
@@ -234,7 +236,7 @@ int CreateSurfaceLabelFiles( std::string vtkFile , std::string labelNumberInfo ,
                 labelVect.push_back(labelLine) ;
             }
             index->InsertNextValue(valIndex) ;
-
+            getline(inputFile,labelLine) ; //format line
         }
     }
     else
@@ -264,86 +266,118 @@ int CreateSurfaceLabelFiles( std::string vtkFile , std::string labelNumberInfo ,
         vtkSmartPointer<vtkThresholdPoints> thresholdPoints= vtkSmartPointer<vtkThresholdPoints>::New() ;
         thresholdPoints->SetInputData(polyData) ;
         thresholdPoints->ThresholdBetween(k+0.5,k+1.5) ;
-        thresholdPoints->SetInputArrayToProcess(arrayId,0,0, vtkDataObject::FIELD_ASSOCIATION_POINTS, "indexLabel") ;        thresholdPoints->Update() ;
+        thresholdPoints->SetInputArrayToProcess(arrayId,0,0, vtkDataObject::FIELD_ASSOCIATION_POINTS, "indexLabel") ;
+        thresholdPoints->Update() ;
         vtkPolyData* thresholdedPolydataPoints = thresholdPoints->GetOutput() ;
-
-        //Threshold cells
-        vtkSmartPointer<vtkThreshold> thresholdCells = vtkSmartPointer<vtkThreshold>::New() ;
-        thresholdCells->SetInputData(polyData) ;
-        thresholdCells->ThresholdBetween(k+0.5,k+1.5) ;
-        thresholdCells->SetInputArrayToProcess(0, 0, 0, vtkDataObject::FIELD_ASSOCIATION_POINTS, "indexLabel") ;
-        thresholdCells->Update() ;
-        vtkUnstructuredGrid* thresholdedPolydataCells = thresholdCells->GetOutput() ;
 
         std::ofstream outputFile ;
         std::string labelName ;
         labelName = directory + '/' ;
+
+        //Vector containing all lines to write in surface file
+        std::vector <std::string> listPoints ;
+        std::vector <std::string> listPolys ;
+        //Vector iterator to write into surface file
+        std::vector <std::string>::const_iterator itPoints, endPoints ;
+        std::vector <std::string>::const_iterator itPolys, endPolys ;
+
+        //Add prefix
         if(prefix != "")
         {
             labelName += prefix + '.' ;
         }
         labelName +=labelVect.at(k) ;
         labelName += ".asc" ;
-        outputFile.open(labelName.c_str() ,std::ios::out) ;
 
-        std::list <int> listIdPoint;
-        if(outputFile.good())
+        std::list <int> listIdPoint ;
+
+        for(vtkIdType i = 0 ; i < thresholdedPolydataPoints->GetNumberOfPoints() ; i++)
         {
-            outputFile << "#!ascii - generated by CreateLabelFiles project \n" ;
-            outputFile << thresholdedPolydataPoints->GetNumberOfPoints() << " "<< thresholdedPolydataCells->GetNumberOfCells() <<"\n" ;
-            for(vtkIdType i = 0 ; i < thresholdedPolydataPoints->GetNumberOfPoints() ; i++)
+            double p[3] ;
+            thresholdedPolydataPoints->GetPoint(i,p) ;
+            std::string linePoints = writeLinePoints(p) ;
+            listPoints.push_back(linePoints) ;
+            int idPointVTK = polyData->FindPoint(p) ;
+            listIdPoint.push_back(idPointVTK) ;
+        }
+
+        int nbPolys = 0 ;
+        for(vtkIdType j = 0; j < polyData->GetNumberOfCells(); j++)
+        {
+            polyData->GetCellPoints(j,cellIdList) ;
+            int nbCompoCell = 0 ;
+            nbCompoCell=cellIdList->GetNumberOfIds() ;
+            int cellValue[nbCompoCell] ;
+            int polyFound=0 ;
+
+            std::list<int>::iterator iter[nbCompoCell] ;
+
+            for(int i = 0; i < nbCompoCell ; i++)
             {
-                double p[3] ;
-                thresholdedPolydataPoints->GetPoint(i,p) ;
-                outputFile << p[0] << " " << p[1] << " " << p[2] <<" 0\n" ;
-                int idPointVTK = polyData->FindPoint(p);
-                listIdPoint.push_back(idPointVTK);
+                cellValue[i]=cellIdList->GetId(i) ;
+                iter[i]=find(listIdPoint.begin(),listIdPoint.end(),cellValue[i]) ;
+                int valArray = index->GetValue(cellValue[i]) ;
+                if(iter[i]!=listIdPoint.end() && valArray==k+1)
+                {
+                    polyFound++ ;
+                }
             }
-
-            //            for(vtkIdType j = 0; j < thresholdedPolydataCells->GetNumberOfCells(); j++)
-            //            {
-            //                thresholdedPolydataCells->GetCellPoints(j,cellIdList) ;
-            //                int nbComponentCell = 0 ;
-            //                nbComponentCell=cellIdList->GetNumberOfIds() ;
-            //                int cellValue[nbComponentCell] ;
-            //                for(int k=0 ; k < nbComponentCell ; k++)
-            //                {
-            //                    cellValue[k]=cellIdList->GetId(k) ;
-            //                    outputFile << cellValue[k] << " " ;
-            //                }
-            //                outputFile << "0\n" ;
-            //            }
-
-            for(vtkIdType j = 0; j < polyData->GetNumberOfCells(); j++)
+            //Polygons withour overlapping
+            if(polyFound==nbCompoCell)
             {
-                polyData->GetCellPoints(j,cellIdList) ;
-                int nbCompoCell = 0 ;
-                nbCompoCell=cellIdList->GetNumberOfIds() ;
-                int cellValue[nbCompoCell] ;
-                int polyFound=0 ;
-                int nbPolys = 0 ;
-                std::list<int>::iterator iter[nbCompoCell] ;
+                nbPolys++ ;
+                std::string lineCells = "" ;
                 for(int i = 0; i < nbCompoCell ; i++)
                 {
-                    cellValue[i]=cellIdList->GetId(i) ;
-                    iter[i]=find(listIdPoint.begin(),listIdPoint.end(),cellValue[i]);
-                    if(iter[i]!=listIdPoint.end())
-                    {
-                        polyFound++ ;
-                    }
+                    std::string cell = IntToString(std::distance(listIdPoint.begin(), iter[i])) ;
+                    lineCells += cell + " " ;
                 }
-                if(polyFound==nbCompoCell)
+                lineCells += "0\n" ;
+                listPolys.push_back(lineCells) ;
+            }
+            //Polygons with overlapping
+            else if(polyFound >= 1 && polyFound < nbCompoCell && overlapping==1)
+            {
+                std::string lineCells ;
+                for(int i = 0; i < nbCompoCell ; i++)
                 {
-                    nbPolys++ ;
-                    for(int i = 0; i < nbCompoCell ; i++)
+                    double newPoint[3] ;
+                    polyData->GetPoint(cellValue[i],newPoint) ;
+                    std::string newLinePoint = writeLinePoints(newPoint) ;
+                    std::vector <std::string> ::const_iterator it ;
+                    it=find(listPoints.begin(),listPoints.end(),newLinePoint) ;
+                    if(it == listPoints.end())
                     {
-                        int valCell = std::distance(listIdPoint.begin(), iter[i]) ;
-                        outputFile << valCell << " " ;
+                        listPoints.push_back(newLinePoint) ;
+                        listIdPoint.push_back(cellValue[i]) ;
                     }
-                    outputFile << "0\n" ;
+                    std::list<int>::iterator newIter ;
+                    newIter=find(listIdPoint.begin(),listIdPoint.end(),cellValue[i]);
+                    std::string cell = IntToString(std::distance(listIdPoint.begin(), newIter)) ;
+                    lineCells += cell + " " ;
                 }
+                lineCells += "0\n" ;
+                listPolys.push_back(lineCells) ;
+                nbPolys++ ;
+            }
+        }
 
-
+        //Write in a file
+        outputFile.open(labelName.c_str() ,std::ios::out) ;
+        if(outputFile.good())
+        {
+            //Write header
+            outputFile << "#!ascii - generated by CreateLabelFiles project \n" ;
+            outputFile << listPoints.size() << " "<< nbPolys <<"\n" ;
+            //write list of points
+            for(itPoints=listPoints.begin(),endPoints=listPoints.end() ; itPoints!=endPoints ; ++itPoints)
+            {
+                outputFile << *itPoints ;
+            }
+            //Wirte list of polygons
+            for(itPolys=listPolys.begin(),endPolys=listPolys.end() ; itPolys!=endPolys ; ++itPolys)
+            {
+                outputFile << *itPolys ;
             }
         }
         else
@@ -352,7 +386,7 @@ int CreateSurfaceLabelFiles( std::string vtkFile , std::string labelNumberInfo ,
             return EXIT_FAILURE ;
         }
         outputFile.close() ;
-        std::cout<<"Creation of "<<labelName<<" done !"<<std::endl;
+        std::cout<<"Creation of "<<labelName<<" done !"<<std::endl ;
     }
 
     std::cout<<"CreateSurfaceLabelFiles Done !\n"<<std::endl ;
@@ -380,6 +414,35 @@ vtkSmartPointer<vtkPolyData> ReadVTKFile(std::string vtkFile)
     }
 }
 
+std::string IntToString(int number)
+{
+    std::string result ;
+    std::ostringstream convert ;
+    convert << number ;
+    result = convert.str() ;
+    return result ;
+}
+
+std::string DoubleToString(double number)
+{
+    std::string result ;
+    std::ostringstream convert ;
+    convert << number ;
+    result = convert.str() ;
+    return result ;
+}
+
+std::string writeLinePoints(double p[3])
+{
+    std::string linePoints="" ;
+    for(int j=0 ; j < 3 ; j++)
+    {
+        std::string point = DoubleToString(p[j]) ;
+        linePoints += point + " " ;
+    }
+    linePoints += "0\n" ;
+    return linePoints ;
+}
 
 int main ( int argc, char *argv[] )
 {
@@ -424,7 +487,7 @@ int main ( int argc, char *argv[] )
         {
             ExtractPointData(vtkLabelFile, labelNameInfo, arrayName) ;
             TranslateToLabelNumber(labelNameInfo, labelNumberInfo) ;
-            CreateSurfaceLabelFiles(vtkFile, labelNumberInfo, prefix) ;
+            CreateSurfaceLabelFiles(vtkFile, labelNumberInfo, prefix, overlapping) ;
         }
         else
         {
@@ -451,7 +514,7 @@ int main ( int argc, char *argv[] )
         if(!labelNameInfo.empty() && !labelNumberInfo.empty() && !vtkFile.empty())
         {
             TranslateToLabelNumber(labelNameInfo, labelNumberInfo) ;
-            CreateSurfaceLabelFiles(vtkFile, labelNumberInfo, prefix) ;
+            CreateSurfaceLabelFiles(vtkFile, labelNumberInfo, prefix, overlapping) ;
         }
         else
         {
@@ -464,7 +527,7 @@ int main ( int argc, char *argv[] )
         std::cout<<"Run CreateSurfaceLabelFiles tool ...\n"<<std::endl ;
         if(!labelNumberInfo.empty() && !vtkFile.empty())
         {
-            CreateSurfaceLabelFiles(vtkFile, labelNumberInfo, prefix) ;
+            CreateSurfaceLabelFiles(vtkFile, labelNumberInfo, prefix, overlapping) ;
         }
         else
         {
