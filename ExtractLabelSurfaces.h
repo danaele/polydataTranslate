@@ -24,3 +24,6 @@ int ExtractPointData(std::string vtkLabelFile, std::string labelNameInfo, std::s
 int TranslateToLabelNumber(std::string labelNameInfo, std::string labelNumberInfo) ;
 int CreateSurfaceLabelFiles(std::string vtkFile, std::string labelNumberInfo, std::string prefix) ;
 vtkSmartPointer<vtkPolyData> ReadVTKFile(std::string vtkFile) ;
+std::string IntToString(int number) ;
+std::string DoubleToString(double number) ;
+std::string writeLinePoints(double p[3]) ;
