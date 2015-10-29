@@ -1,26 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
 <executable>
-<category>vtkSurfaces</category>
-<title>ExtractLabelSurfaces</title>
-<version>1.0</version>
+  <category>vtkSurfaces</category>
+  <title>ExtractLabelSurfaces</title>
+  <version>1.0</version>
 
-<description>ExtractLabelSurfaces is a tool which extracted labels surfaces from a surface containing labels</description>
-<version>1.0</version>
-<acknowledgements><![CDATA[This work is part of the National Alliance for Medical Image Computing (NAMIC), funded by the National Institutes of Health through the NIH Roadmap for Medical Research, Grants U01 MH070890 - U54 HD079124 - R01 MH091351.]]></acknowledgements> 
+  <description>ExtractLabelSurfaces is a tool which extracted labels surfaces from a surface containing labels</description>
+  <version>1.0</version>
+  <contributor>Danaele Puechmaille, Francois Budin, Martin Styner</contributor> 
+  <acknowledgements><![CDATA[This work is part of the National Alliance for Medical Image Computing (NAMIC), funded by the National Institutes of Health through the NIH Roadmap for Medical Research, Grants U01 MH070890 - U54 HD079124 - R01 MH091351.]]></acknowledgements> 
 
-<parameters>
-	<label>IO</label>
-	<description>Input/Output parameters</description>  
+  <parameters>
+	  <label>IO</label>
+	  <description>Input/Output parameters</description>  
   
-  <string>
-	  <name>prefix</name>
-		<label>prefix</label>
-		<flag>p</flag>
-		<longflag>prefix</longflag>
-		<description>Prefix added in names of each output files </description>
-	</string> 
+    <string>
+	    <name>prefix</name>
+		  <label>prefix</label>
+		  <flag>p</flag>
+		  <longflag>prefix</longflag>
+		  <description>Prefix added in names of each output files </description>
+		</string> 
 
-   <boolean>
+    <boolean>
       <name>createSurfaceLabelFiles</name>
       <longflag>createSurfaceLabelFiles</longflag>
       <label>Create Surface Label Files</label>
@@ -29,20 +30,20 @@
     </boolean>
     
     <geometry fileExtensions="vtk" multiple="false" >
-		<name>vtkFile</name>
-		<label>VTK File</label>
-		<longflag>vtkFile</longflag>
-		<description>Surface without label information from which we extract the different labeled surfaces ( myfile.vtk )</description>
-	 </geometry>
+		  <name>vtkFile</name>
+		  <label>VTK File</label>
+		  <longflag>vtkFile</longflag>
+		  <description>Surface without label information from which we extract the different labeled surfaces ( myfile.vtk )</description>
+	  </geometry>
 	 
-	 <file fileExtensions="txt" >
-     <name >labelNumberInfo</name>
-     <label>Load label info list by number </label>
-     <longflag>labelNumberInfo</longflag>
-     <description>List containing label information by number</description>
-   </file>
+	  <file fileExtensions="txt" >
+      <name >labelNumberInfo</name>
+      <label>Load label info list by number </label>
+      <longflag>labelNumberInfo</longflag>
+      <description>List containing label information by number</description>
+    </file>
 	 
-	 <boolean>
+	  <boolean>
       <name>translateToLabelNumber</name>
       <longflag>translateToLabelNumber</longflag>
       <label>Translate To Label Number</label>
@@ -50,29 +51,29 @@
       <description>Translate labelNameInformation file to labelNumberInformation file : required flags --labelNameInfo  and --labelNumberInfo.</description>
     </boolean>
 	 
-	 <file fileExtensions="txt" >
-     <name >labelNameInfo</name>
-     <label>Load label info list by name </label>
-     <longflag>labelNameInfo</longflag>
-     <description>List containing label information by name.</description>
-   </file>
+	  <file fileExtensions="txt" >
+      <name >labelNameInfo</name>
+      <label>Load label info list by name </label>
+      <longflag>labelNameInfo</longflag>
+      <description>List containing label information by name.</description>
+    </file>
 	 
-	 <string>
-	  <name>arrayName</name>
-		<label>Array Name</label>
-		<flag>a</flag>
-		<longflag>arrayName</longflag>
-		<description>Array name containing label information</description>
-	 </string> 
+	  <string>
+	    <name>arrayName</name>
+		  <label>Array Name</label>
+		  <flag>a</flag>
+		  <longflag>arrayName</longflag>
+		  <description>Array name containing label information</description>
+	  </string> 
 	 
-	 <geometry fileExtensions="vtk" multiple="false" >
-		<name>vtkLabelFile</name>
-		<label>VTK label File</label>
-		<longflag>vtkLabelFile</longflag>
-		<description>Surface with labels information ( myfile_withLabel.vtk )</description>
-	 </geometry>
+	  <geometry fileExtensions="vtk" multiple="false" >
+		  <name>vtkLabelFile</name>
+		  <label>VTK label File</label>
+		  <longflag>vtkLabelFile</longflag>
+		  <description>Surface with labels information ( myfile_withLabel.vtk )</description>
+	  </geometry>
 	 
-	 <boolean>
+	  <boolean>
       <name>extractPointData</name>
       <longflag>extractPointData</longflag>
       <label>Extract Point Data</label>
@@ -80,6 +81,6 @@
       <description>Extract Point Data from the vtk file containing labels : required flags --vtklabelFile --arrayName/-a and --labelNameInfo </description>
     </boolean>
 
-</parameters>
+  </parameters>
 
 </executable>
