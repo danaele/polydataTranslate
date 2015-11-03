@@ -20,10 +20,16 @@
 
 #include <vtksys/SystemTools.hxx> // for MakeDirectory()
 
-int ExtractPointData(std::string vtkLabelFile, std::string labelNameInfo, std::string arrayName) ;
-int TranslateToLabelNumber(std::string labelNameInfo, std::string labelNumberInfo) ;
-int CreateSurfaceLabelFiles(std::string vtkFile, std::string labelNumberInfo, std::string prefix, bool overlapping) ;
-vtkSmartPointer<vtkPolyData> ReadVTKFile(std::string vtkFile) ;
-std::string IntToString(int number) ;
-std::string DoubleToString(double number) ;
-std::string writeLinePoints(double p[3]) ;
+int ExtractPointData ( std::string vtkLabelFile , std::string labelNameInfo , std::string arrayName ) ;
+
+int TranslateToLabelNumber ( std::string labelNameInfo , std::string labelNumberInfo ) ;
+
+int CreateSurfaceLabelFiles ( std::string vtkFile , std::string labelNumberInfo , std::string prefix , bool overlapping) ;
+
+vtkSmartPointer <vtkPolyData> ReadVTKFile ( std::string vtkFile ) ;
+
+std::string IntToString ( int number ) ;
+
+std::string DoubleToString ( double number ) ;
+
+std::string writeLinePoints ( double p[3] ) ;
