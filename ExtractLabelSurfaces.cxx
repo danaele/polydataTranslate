@@ -90,7 +90,7 @@ int TranslateToLabelNumber ( std::string labelNameInfo , std::string labelNumber
     int labelNumber = 0 ;
     if (useTranslationTable == 1 )
     {
-        std::cout<<"Use RGBTranslationTable"<<std::endl ;
+        std::cout<<"Use TranslationTable with "<<nb_component<<" component(s) "<<std::endl ;
        labelMap=ReadLabelTranslationTable(labelTranslationTable, nb_component);
        if(labelMap.empty())
        {
