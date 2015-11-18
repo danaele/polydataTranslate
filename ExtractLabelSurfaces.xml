@@ -48,7 +48,7 @@
      <name >labelNumberInfo</name>
      <label>Load label info list by number </label>
      <longflag>labelNumberInfo</longflag>
-     <description>List containing label information by number</description>
+     <description>List containing label information by number in accordance with a Translation table (--useTranslationTable) or not. </description>
    </file>
 	 
 	 <file fileExtensions="txt" >

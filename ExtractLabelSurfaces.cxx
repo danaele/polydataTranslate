@@ -70,7 +70,7 @@ int ExtractPointData ( std::string vtkLabelFile , std::string labelNameInfo , st
 }
 
 //Tool 2 : TranslateToLabelNumber -> create a file containing the label number for each point
-int TranslateToLabelNumber ( std::string labelNameInfo , std::string labelNumberInfo )
+int TranslateToLabelNumber ( std::string labelNameInfo , std::string labelNumberInfo, bool useTranslationTable )
 {
     std::cout << "Start TranslateToLabelNumber..." << std::endl ;
 
