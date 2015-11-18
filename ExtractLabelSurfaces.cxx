@@ -70,7 +70,7 @@ int ExtractPointData ( std::string vtkLabelFile , std::string labelNameInfo , st
 }
 
 //Tool 2 : TranslateToLabelNumber -> create a file containing the label number for each point
-int TranslateToLabelNumber ( std::string labelNameInfo , std::string labelNumberInfo, bool useTranslationTable )
+int TranslateToLabelNumber ( std::string labelNameInfo , std::string labelNumberInfo, bool useTranslationTable, std::string labelTranslationTable )
 {
     std::cout << "Start TranslateToLabelNumber..." << std::endl ;
 
@@ -88,7 +88,20 @@ int TranslateToLabelNumber ( std::string labelNameInfo , std::string labelNumber
     std::vector <std::pair <int , std::string> >::const_iterator vit,vend ;
 
     int labelNumber = 0 ;
-
+    if (useTranslationTable == 1 )
+    {
+        std::cout<<"Use RGBTranslationTable"<<std::endl ;
+       labelMap=ReadLabelRGBTranslationTable(labelTranslationTable);
+       if(labelMap.empty())
+       {
+           std::cout <<"Error of interpretation of the TableTranslation - check if TableTranslation file is correct" << std::endl ;
+           return EXIT_FAILURE ;
+       }
+       else
+       {
+           labelNumber = labelMap.size() ;
+       }
+    }
     //Extract labels and points associated
     if( inputFile.good() ) //file can be open
     {
@@ -103,15 +116,22 @@ int TranslateToLabelNumber ( std::string labelNameInfo , std::string labelNumber
             do
             {
                 std::string newlabel = labelLine ;
-                if( labelMap.find(labelLine) != labelMap.end() )
+                if (useTranslationTable == 0 )
                 {
-                    outputFile << labelMap[newlabel]<<"\n" ;
+                    if( labelMap.find(labelLine) != labelMap.end() )
+                    {
+                        outputFile << labelMap[newlabel]<<"\n" ;
+                    }
+                    else
+                    {
+                        labelNumber++ ;
+                        labelMap[newlabel] = labelNumber ;
+                        outputFile << labelMap[newlabel] << "\n" ;
+                    }
                 }
                 else
                 {
-                    labelNumber++ ;
-                    labelMap[newlabel] = labelNumber ;
-                    outputFile << labelMap[newlabel] << "\n" ;
+                    outputFile << labelMap[newlabel]<<"\n" ;
                 }
                 getline( inputFile , labelLine ) ;
             }while( !inputFile.eof() ) ;
@@ -157,7 +177,7 @@ int TranslateToLabelNumber ( std::string labelNameInfo , std::string labelNumber
     }
     logFile.close();
 
-    std::cout << "Number of labels : " << labelNumber << std::endl ;
+    std::cout << "Number of labels in table: " << labelNumber << std::endl ;
     std::cout << "TranslateToLabelNumber Done !\n" << std::endl ;
     return EXIT_SUCCESS ;
 }
@@ -173,6 +193,8 @@ int CreateSurfaceLabelFiles ( std::string vtkFile , std::string labelNumberInfo 
     std::string labelLine ;
     int nbLinesLabels = 0 ;
     std::vector <std::string> labelVect ;
+    std::vector <std::string>::const_iterator it_labelVect, end_labelVect ;
+    int number_surfaces_created = 0 ;
     //List of polygons
     vtkSmartPointer <vtkIdList> cellIdList = vtkSmartPointer <vtkIdList>::New() ;
 
@@ -257,15 +279,18 @@ int CreateSurfaceLabelFiles ( std::string vtkFile , std::string labelNumberInfo 
             arrayId = i ;
         }
     }
+
     std::string directory = "labelSurfaces" ;
     vtksys::SystemTools::MakeDirectory(directory) ;
     //Threshold the polyData
-    for( int k=0 ; k < labelVect.size() ; k++ )
+    for(it_labelVect=labelVect.begin() , end_labelVect=labelVect.end() ; it_labelVect!=end_labelVect ; it_labelVect++)
     {
         //Threshold points
+        std::string labelNumberTxt = *it_labelVect;
+        int labelNumber = atoi(labelNumberTxt.c_str());
         vtkSmartPointer <vtkThresholdPoints> thresholdPoints= vtkSmartPointer <vtkThresholdPoints>::New() ;
         thresholdPoints->SetInputData(polyData) ;
-        thresholdPoints->ThresholdBetween(k+0.5,k+1.5) ;
+        thresholdPoints->ThresholdBetween(labelNumber-0.5,labelNumber+0.5) ;
         thresholdPoints->SetInputArrayToProcess( arrayId , 0 , 0 , vtkDataObject::FIELD_ASSOCIATION_POINTS , "indexLabel" ) ;
         thresholdPoints->Update() ;
         vtkPolyData* thresholdedPolydataPoints = thresholdPoints->GetOutput() ;
@@ -286,7 +311,7 @@ int CreateSurfaceLabelFiles ( std::string vtkFile , std::string labelNumberInfo 
         {
             labelName += prefix + '.' ;
         }
-        labelName += labelVect.at(k) ;
+        labelName += IntToString(labelNumber) ;
         labelName += ".asc" ;
 
         std::list <int> listIdPoint ;
@@ -317,7 +342,7 @@ int CreateSurfaceLabelFiles ( std::string vtkFile , std::string labelNumberInfo 
                 cellValue[i] = cellIdList->GetId(i) ;
                 iter[i] = find( listIdPoint.begin() , listIdPoint.end() , cellValue[i] ) ;
                 int valArray = index->GetValue(cellValue[i]) ;
-                if( iter[i] != listIdPoint.end() && valArray == k+1 )
+                if( iter[i] != listIdPoint.end() && valArray == labelNumber )
                 {
                     polyFound++ ;
                 }
@@ -361,7 +386,6 @@ int CreateSurfaceLabelFiles ( std::string vtkFile , std::string labelNumberInfo 
                 nbPolys++ ;
             }
         }
-
         //Write in a file
         outputFile.open( labelName.c_str() , std::ios::out ) ;
         if( outputFile.good() )
@@ -387,11 +411,67 @@ int CreateSurfaceLabelFiles ( std::string vtkFile , std::string labelNumberInfo 
         }
         outputFile.close() ;
         std::cout << "Creation of " << labelName << " done !" << std::endl ;
-    }
+        number_surfaces_created++ ;
 
+    }
+    std::cout << "Number of surfaces created : " << number_surfaces_created << std::endl ;
     std::cout << "CreateSurfaceLabelFiles Done !\n" << std::endl ;
     return EXIT_SUCCESS ;
 }
+
+std::map <std::string , int> ReadLabelRGBTranslationTable ( std::string labelTranslationTable )
+{
+    //Read labelInformation file
+    std::ifstream inputFile ;
+    inputFile.open( labelTranslationTable.c_str() , std::ios::in ) ;
+    std::string labelInfo;
+    std::map <std::string , int> labelTranslationMap ;
+    if( inputFile.good() )
+    {
+        do
+        {
+            getline( inputFile , labelInfo ,' ' ) ; //get information line
+        }while( labelInfo[0] == '#' ) ;
+        //Interpretation of the TranslationTable - must be construct like that "TextName[space]Number[space]RGBValue_Compo1[space]RGBValue_Compo2[space]RGBValue_Compo3[space]" at each line
+        do
+        {
+            getline( inputFile , labelInfo , ' ' ) ;
+            //std::cout<<"Number "<<labelInfo<<std::endl;
+            int labelNumber;
+            labelNumber = atoi(labelInfo.c_str()) ;
+            std::string RGBValue="" ;
+            for( int k=0 ; k < 3 ; k++)
+            {
+                getline( inputFile , labelInfo , ' ' ) ;
+                //std::cout<<"Compo"<<k<<" "<<labelInfo<<std::endl;
+                std::string RGBCompo = labelInfo ;
+                RGBValue += RGBCompo ;
+                if( k < 2 )
+                {
+                    RGBValue += " " ;
+                }
+            }
+            labelTranslationMap[RGBValue] = labelNumber ;
+            getline( inputFile , labelInfo , ' ' ) ; //get labelTextName
+            //std::cout <<labelInfo<<std::endl;
+
+        }while( !inputFile.eof() ) ;
+    }
+    else
+    {
+        std::cout << "Cannot open the label file " << std::endl ;
+    }
+    inputFile.close() ;
+
+    //Read Map
+//    std::map <std::string , int>::const_iterator it, end ;
+//    for( it = labelTranslationMap.begin() , end = labelTranslationMap.end() ; it != end ; ++it )
+//    {
+//        std::cout<< it->first << " : " << it->second << std::endl ;
+//    }
+    return labelTranslationMap ;
+}
+
 
 vtkSmartPointer <vtkPolyData> ReadVTKFile ( std::string vtkFile )
 {
@@ -472,7 +552,7 @@ int main ( int argc, char *argv[] )
         if( !vtkLabelFile.empty() && !labelNameInfo.empty() && !labelNumberInfo.empty() && !arrayName.empty())
         {
             ExtractPointData( vtkLabelFile , labelNameInfo , arrayName ) ;
-            TranslateToLabelNumber( labelNameInfo , labelNumberInfo, useTranslationTable ) ;
+            TranslateToLabelNumber( labelNameInfo , labelNumberInfo, useTranslationTable, labelTranslationTable ) ;
         }
         else
         {
@@ -486,7 +566,7 @@ int main ( int argc, char *argv[] )
         if( !vtkLabelFile.empty() && !labelNameInfo.empty() && !labelNumberInfo.empty() && !vtkFile.empty() && !arrayName.empty() )
         {
             ExtractPointData( vtkLabelFile , labelNameInfo , arrayName ) ;
-            TranslateToLabelNumber( labelNameInfo , labelNumberInfo, useTranslationTable ) ;
+            TranslateToLabelNumber( labelNameInfo , labelNumberInfo, useTranslationTable, labelTranslationTable ) ;
             CreateSurfaceLabelFiles( vtkFile , labelNumberInfo , prefix , overlapping ) ;
         }
         else
@@ -500,7 +580,7 @@ int main ( int argc, char *argv[] )
         std::cout << "Run TranslateToLabelNumber tool ...\n" << std::endl ;
         if( !labelNameInfo.empty() && !labelNumberInfo.empty() )
         {
-            TranslateToLabelNumber( labelNameInfo , labelNumberInfo, useTranslationTable ) ;
+            TranslateToLabelNumber( labelNameInfo , labelNumberInfo, useTranslationTable, labelTranslationTable ) ;
         }
         else
         {
@@ -513,7 +593,7 @@ int main ( int argc, char *argv[] )
         std::cout << "Run TranslateToLabelNumber and CreateSurfaceLabelFiles tools ...\n" << std::endl ;
         if( !labelNameInfo.empty() && !labelNumberInfo.empty() && !vtkFile.empty() )
         {
-            TranslateToLabelNumber( labelNameInfo, labelNumberInfo, useTranslationTable ) ;
+            TranslateToLabelNumber( labelNameInfo, labelNumberInfo, useTranslationTable, labelTranslationTable ) ;
             CreateSurfaceLabelFiles( vtkFile , labelNumberInfo , prefix , overlapping ) ;
         }
         else
