@@ -22,11 +22,11 @@
 
 int ExtractPointData ( std::string vtkLabelFile , std::string labelNameInfo , std::string arrayName ) ;
 
-int TranslateToLabelNumber ( std::string labelNameInfo , std::string labelNumberInfo, bool useTranslationTable, std::string labelTranslationTable ) ;
+int TranslateToLabelNumber ( std::string labelNameInfo , std::string labelNumberInfo , bool useTranslationTable , std::string labelTranslationTable , int nb_component ) ;
 
 int CreateSurfaceLabelFiles ( std::string vtkFile , std::string labelNumberInfo , std::string prefix , bool overlapping) ;
 
-std::map < std::string, int >  ReadLabelRGBTranslationTable ( std::string labelTranslationTable) ;
+std::map < std::string, int >  ReadLabelTranslationTable ( std::string labelTranslationTable , int nb_component ) ;
 
 vtkSmartPointer <vtkPolyData> ReadVTKFile ( std::string vtkFile ) ;
 

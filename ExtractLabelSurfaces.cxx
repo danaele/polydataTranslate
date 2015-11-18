@@ -70,7 +70,7 @@ int ExtractPointData ( std::string vtkLabelFile , std::string labelNameInfo , st
 }
 
 //Tool 2 : TranslateToLabelNumber -> create a file containing the label number for each point
-int TranslateToLabelNumber ( std::string labelNameInfo , std::string labelNumberInfo, bool useTranslationTable, std::string labelTranslationTable )
+int TranslateToLabelNumber ( std::string labelNameInfo , std::string labelNumberInfo , bool useTranslationTable , std::string labelTranslationTable , int nb_component )
 {
     std::cout << "Start TranslateToLabelNumber..." << std::endl ;
 
@@ -91,7 +91,7 @@ int TranslateToLabelNumber ( std::string labelNameInfo , std::string labelNumber
     if (useTranslationTable == 1 )
     {
         std::cout<<"Use RGBTranslationTable"<<std::endl ;
-       labelMap=ReadLabelRGBTranslationTable(labelTranslationTable);
+       labelMap=ReadLabelTranslationTable(labelTranslationTable, nb_component);
        if(labelMap.empty())
        {
            std::cout <<"Error of interpretation of the TableTranslation - check if TableTranslation file is correct" << std::endl ;
@@ -419,7 +419,7 @@ int CreateSurfaceLabelFiles ( std::string vtkFile , std::string labelNumberInfo 
     return EXIT_SUCCESS ;
 }
 
-std::map <std::string , int> ReadLabelRGBTranslationTable ( std::string labelTranslationTable )
+std::map <std::string , int> ReadLabelTranslationTable ( std::string labelTranslationTable, int nb_component )
 {
     //Read labelInformation file
     std::ifstream inputFile ;
@@ -432,7 +432,7 @@ std::map <std::string , int> ReadLabelRGBTranslationTable ( std::string labelTra
         {
             getline( inputFile , labelInfo ,' ' ) ; //get information line
         }while( labelInfo[0] == '#' ) ;
-        //Interpretation of the TranslationTable - must be construct like that "TextName[space]Number[space]RGBValue_Compo1[space]RGBValue_Compo2[space]RGBValue_Compo3[space]" at each line
+        //Interpretation of the TranslationTable - must be construct like that "TextName[space]Number[space]Value_Compo1[space]...Value_CompoX" at each line
         do
         {
             getline( inputFile , labelInfo , ' ' ) ;
@@ -552,7 +552,7 @@ int main ( int argc, char *argv[] )
         if( !vtkLabelFile.empty() && !labelNameInfo.empty() && !labelNumberInfo.empty() && !arrayName.empty())
         {
             ExtractPointData( vtkLabelFile , labelNameInfo , arrayName ) ;
-            TranslateToLabelNumber( labelNameInfo , labelNumberInfo, useTranslationTable, labelTranslationTable ) ;
+            TranslateToLabelNumber( labelNameInfo , labelNumberInfo, useTranslationTable, labelTranslationTable, nb_component ) ;
         }
         else
         {
@@ -566,7 +566,7 @@ int main ( int argc, char *argv[] )
         if( !vtkLabelFile.empty() && !labelNameInfo.empty() && !labelNumberInfo.empty() && !vtkFile.empty() && !arrayName.empty() )
         {
             ExtractPointData( vtkLabelFile , labelNameInfo , arrayName ) ;
-            TranslateToLabelNumber( labelNameInfo , labelNumberInfo, useTranslationTable, labelTranslationTable ) ;
+            TranslateToLabelNumber( labelNameInfo , labelNumberInfo, useTranslationTable, labelTranslationTable, nb_component ) ;
             CreateSurfaceLabelFiles( vtkFile , labelNumberInfo , prefix , overlapping ) ;
         }
         else
@@ -580,7 +580,7 @@ int main ( int argc, char *argv[] )
         std::cout << "Run TranslateToLabelNumber tool ...\n" << std::endl ;
         if( !labelNameInfo.empty() && !labelNumberInfo.empty() )
         {
-            TranslateToLabelNumber( labelNameInfo , labelNumberInfo, useTranslationTable, labelTranslationTable ) ;
+            TranslateToLabelNumber( labelNameInfo , labelNumberInfo, useTranslationTable, labelTranslationTable, nb_component ) ;
         }
         else
         {
@@ -593,7 +593,7 @@ int main ( int argc, char *argv[] )
         std::cout << "Run TranslateToLabelNumber and CreateSurfaceLabelFiles tools ...\n" << std::endl ;
         if( !labelNameInfo.empty() && !labelNumberInfo.empty() && !vtkFile.empty() )
         {
-            TranslateToLabelNumber( labelNameInfo, labelNumberInfo, useTranslationTable, labelTranslationTable ) ;
+            TranslateToLabelNumber( labelNameInfo, labelNumberInfo, useTranslationTable, labelTranslationTable, nb_component ) ;
             CreateSurfaceLabelFiles( vtkFile , labelNumberInfo , prefix , overlapping ) ;
         }
         else
