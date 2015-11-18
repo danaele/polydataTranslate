@@ -472,7 +472,7 @@ int main ( int argc, char *argv[] )
         if( !vtkLabelFile.empty() && !labelNameInfo.empty() && !labelNumberInfo.empty() && !arrayName.empty())
         {
             ExtractPointData( vtkLabelFile , labelNameInfo , arrayName ) ;
-            TranslateToLabelNumber( labelNameInfo , labelNumberInfo ) ;
+            TranslateToLabelNumber( labelNameInfo , labelNumberInfo, useTranslationTable ) ;
         }
         else
         {
@@ -486,7 +486,7 @@ int main ( int argc, char *argv[] )
         if( !vtkLabelFile.empty() && !labelNameInfo.empty() && !labelNumberInfo.empty() && !vtkFile.empty() && !arrayName.empty() )
         {
             ExtractPointData( vtkLabelFile , labelNameInfo , arrayName ) ;
-            TranslateToLabelNumber( labelNameInfo , labelNumberInfo ) ;
+            TranslateToLabelNumber( labelNameInfo , labelNumberInfo, useTranslationTable ) ;
             CreateSurfaceLabelFiles( vtkFile , labelNumberInfo , prefix , overlapping ) ;
         }
         else
@@ -500,7 +500,7 @@ int main ( int argc, char *argv[] )
         std::cout << "Run TranslateToLabelNumber tool ...\n" << std::endl ;
         if( !labelNameInfo.empty() && !labelNumberInfo.empty() )
         {
-            TranslateToLabelNumber( labelNameInfo , labelNumberInfo ) ;
+            TranslateToLabelNumber( labelNameInfo , labelNumberInfo, useTranslationTable ) ;
         }
         else
         {
@@ -513,7 +513,7 @@ int main ( int argc, char *argv[] )
         std::cout << "Run TranslateToLabelNumber and CreateSurfaceLabelFiles tools ...\n" << std::endl ;
         if( !labelNameInfo.empty() && !labelNumberInfo.empty() && !vtkFile.empty() )
         {
-            TranslateToLabelNumber( labelNameInfo, labelNumberInfo ) ;
+            TranslateToLabelNumber( labelNameInfo, labelNumberInfo, useTranslationTable ) ;
             CreateSurfaceLabelFiles( vtkFile , labelNumberInfo , prefix , overlapping ) ;
         }
         else

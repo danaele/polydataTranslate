@@ -25,7 +25,6 @@
       <name>overlapping</name>
       <longflag>overlapping</longflag>
       <label>overlapping</label>
-
       <default>false</default>
       <description>Reconstruct label surfaces with overlapping </description>
    </boolean>
@@ -52,12 +51,27 @@
      <description>List containing label information by number</description>
    </file>
 	 
+	 <file fileExtensions="txt" >
+     <name >labelTranslationTable</name>
+     <label>Translation Table for labelNumber</label>
+     <longflag>labelTranslationTable</longflag>
+     <description>Table containing label number for each label name</description>
+   </file>
+   
+    <boolean>
+      <name>useTranslationTable</name>
+      <longflag>useTranslationTable</longflag>
+      <label>useTranslationTable</label>
+      <default>false</default>
+      <description>Find label filename with a translation table</description>
+   </boolean>
+	 
 	  <boolean>
       <name>translateToLabelNumber</name>
       <longflag>translateToLabelNumber</longflag>
       <label>Translate To Label Number</label>
       <default>false</default>
-      <description>Translate labelNameInformation file to labelNumberInformation file : required flags --labelNameInfo  and --labelNumberInfo.</description>
+      <description>Translate labelNameInformation file to labelNumberInformation file : required flags --labelNameInfo  and --labelNumberInfo. If you add a Translation table then you need to specified flags --useTable and --labelTranslationTable</description>
     </boolean>
 	 
 	  <file fileExtensions="txt" >
