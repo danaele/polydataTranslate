@@ -51,15 +51,6 @@
      <description>List containing label information by number in accordance with a Translation table (--useTranslationTable) or not. </description>
    </file>
 	 
-	 <integer> 
-	    <name>nb_component</name>
-      <longflag>nb_component</longflag>
-      <flag>n</flag>
-      <label>Number of Component</label>
-      <default>3</default>
-      <description>Define the number of component in the Translation table (Default : RGB value - 3 components)</description>
-	 </integer> 
-	 
 	 <file fileExtensions="txt" >
      <name >labelTranslationTable</name>
      <label>Translation Table for labelNumber</label>

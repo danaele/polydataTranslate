@@ -70,7 +70,7 @@ int ExtractPointData ( std::string vtkLabelFile , std::string labelNameInfo , st
 }
 
 //Tool 2 : TranslateToLabelNumber -> create a file containing the label number for each point
-int TranslateToLabelNumber ( std::string labelNameInfo , std::string labelNumberInfo , bool useTranslationTable , std::string labelTranslationTable , int nb_component )
+int TranslateToLabelNumber ( std::string labelNameInfo , std::string labelNumberInfo , bool useTranslationTable , std::string labelTranslationTable )
 {
     std::cout << "Start TranslateToLabelNumber..." << std::endl ;
 
@@ -90,17 +90,17 @@ int TranslateToLabelNumber ( std::string labelNameInfo , std::string labelNumber
     int labelNumber = 0 ;
     if (useTranslationTable == 1 )
     {
-        std::cout<<"Use TranslationTable with "<<nb_component<<" component(s) "<<std::endl ;
-       labelMap=ReadLabelTranslationTable(labelTranslationTable, nb_component);
-       if(labelMap.empty())
-       {
-           std::cout <<"Error of interpretation of the TableTranslation - check if TableTranslation file is correct" << std::endl ;
-           return EXIT_FAILURE ;
-       }
-       else
-       {
-           labelNumber = labelMap.size() ;
-       }
+        std::cout<<"Use a translation table"<<std::endl ;
+        labelMap=ReadLabelTranslationTable( labelTranslationTable );
+        if(labelMap.empty())
+        {
+            std::cout <<"Error of interpretation of the TableTranslation - check if TableTranslation file is correct" << std::endl ;
+            return EXIT_FAILURE ;
+        }
+        else
+        {
+            labelNumber = labelMap.size() ;
+        }
     }
     //Extract labels and points associated
     if( inputFile.good() ) //file can be open
@@ -419,42 +419,58 @@ int CreateSurfaceLabelFiles ( std::string vtkFile , std::string labelNumberInfo 
     return EXIT_SUCCESS ;
 }
 
-std::map <std::string , int> ReadLabelTranslationTable ( std::string labelTranslationTable, int nb_component )
+std::map <std::string , int> ReadLabelTranslationTable ( std::string labelTranslationTable )
 {
     //Read labelInformation file
     std::ifstream inputFile ;
     inputFile.open( labelTranslationTable.c_str() , std::ios::in ) ;
     std::string labelInfo;
+    std::string::iterator str_it, str_end;
     std::map <std::string , int> labelTranslationMap ;
     if( inputFile.good() )
     {
+        //        do
+        //        {
+        //            getline( inputFile , labelInfo ,' ' ) ; //get information line
+        //        }while( labelInfo[0] == '#' ) ;
         do
         {
-            getline( inputFile , labelInfo ,' ' ) ; //get information line
+            getline( inputFile , labelInfo ) ; //get information line
         }while( labelInfo[0] == '#' ) ;
-        //Interpretation of the TranslationTable - must be construct like that "TextName[space]Number[space]Value_Compo1[space]...Value_CompoX" at each line
+        //Interpretation of the TranslationTable - must be construct like that "TextName[space]Number[space]labelName" at each line
+        //labelName can containing space
         do
         {
-            getline( inputFile , labelInfo , ' ' ) ;
-            //std::cout<<"Number "<<labelInfo<<std::endl;
-            int labelNumber;
-            labelNumber = atoi(labelInfo.c_str()) ;
-            std::string RGBValue="" ;
-            for( int k=0 ; k < 3 ; k++)
+            std::string TextName ;
+            std::string Number ;
+            std::string LabelName ;
+            int numberInfo=0 ;
+            for(str_it=labelInfo.begin() , str_end=labelInfo.end() ; str_it!=str_end ; ++str_it )
             {
-                getline( inputFile , labelInfo , ' ' ) ;
-                //std::cout<<"Compo"<<k<<" "<<labelInfo<<std::endl;
-                std::string RGBCompo = labelInfo ;
-                RGBValue += RGBCompo ;
-                if( k < 2 )
+
+                if(*str_it != ' ' && numberInfo < 2)
                 {
-                    RGBValue += " " ;
+                    if( numberInfo == 0 )
+                    {
+                        TextName += *str_it ;
+                    }
+                    else if( numberInfo == 1 )
+                    {
+                        Number += *str_it ;
+                    }
+                }
+                else if ( numberInfo == 2)
+                {
+                    LabelName += *str_it ;
+                }
+                else
+                {
+                    numberInfo++ ;
                 }
             }
-            labelTranslationMap[RGBValue] = labelNumber ;
-            getline( inputFile , labelInfo , ' ' ) ; //get labelTextName
-            //std::cout <<labelInfo<<std::endl;
-
+            int labelNumber = atoi(Number.c_str()) ;
+            labelTranslationMap[LabelName] = labelNumber ;
+            getline( inputFile , labelInfo ) ;
         }while( !inputFile.eof() ) ;
     }
     else
@@ -464,11 +480,11 @@ std::map <std::string , int> ReadLabelTranslationTable ( std::string labelTransl
     inputFile.close() ;
 
     //Read Map
-//    std::map <std::string , int>::const_iterator it, end ;
-//    for( it = labelTranslationMap.begin() , end = labelTranslationMap.end() ; it != end ; ++it )
-//    {
-//        std::cout<< it->first << " : " << it->second << std::endl ;
-//    }
+    std::map <std::string , int>::const_iterator it, end ;
+    for( it = labelTranslationMap.begin() , end = labelTranslationMap.end() ; it != end ; ++it )
+    {
+        std::cout<< it->first << " : " << it->second << std::endl ;
+    }
     return labelTranslationMap ;
 }
 
@@ -552,7 +568,7 @@ int main ( int argc, char *argv[] )
         if( !vtkLabelFile.empty() && !labelNameInfo.empty() && !labelNumberInfo.empty() && !arrayName.empty())
         {
             ExtractPointData( vtkLabelFile , labelNameInfo , arrayName ) ;
-            TranslateToLabelNumber( labelNameInfo , labelNumberInfo, useTranslationTable, labelTranslationTable, nb_component ) ;
+            TranslateToLabelNumber( labelNameInfo , labelNumberInfo, useTranslationTable, labelTranslationTable ) ;
         }
         else
         {
@@ -566,7 +582,7 @@ int main ( int argc, char *argv[] )
         if( !vtkLabelFile.empty() && !labelNameInfo.empty() && !labelNumberInfo.empty() && !vtkFile.empty() && !arrayName.empty() )
         {
             ExtractPointData( vtkLabelFile , labelNameInfo , arrayName ) ;
-            TranslateToLabelNumber( labelNameInfo , labelNumberInfo, useTranslationTable, labelTranslationTable, nb_component ) ;
+            TranslateToLabelNumber( labelNameInfo , labelNumberInfo, useTranslationTable, labelTranslationTable ) ;
             CreateSurfaceLabelFiles( vtkFile , labelNumberInfo , prefix , overlapping ) ;
         }
         else
@@ -580,7 +596,7 @@ int main ( int argc, char *argv[] )
         std::cout << "Run TranslateToLabelNumber tool ...\n" << std::endl ;
         if( !labelNameInfo.empty() && !labelNumberInfo.empty() )
         {
-            TranslateToLabelNumber( labelNameInfo , labelNumberInfo, useTranslationTable, labelTranslationTable, nb_component ) ;
+            TranslateToLabelNumber( labelNameInfo , labelNumberInfo, useTranslationTable, labelTranslationTable ) ;
         }
         else
         {
@@ -593,7 +609,7 @@ int main ( int argc, char *argv[] )
         std::cout << "Run TranslateToLabelNumber and CreateSurfaceLabelFiles tools ...\n" << std::endl ;
         if( !labelNameInfo.empty() && !labelNumberInfo.empty() && !vtkFile.empty() )
         {
-            TranslateToLabelNumber( labelNameInfo, labelNumberInfo, useTranslationTable, labelTranslationTable, nb_component ) ;
+            TranslateToLabelNumber( labelNameInfo, labelNumberInfo, useTranslationTable, labelTranslationTable ) ;
             CreateSurfaceLabelFiles( vtkFile , labelNumberInfo , prefix , overlapping ) ;
         }
         else
