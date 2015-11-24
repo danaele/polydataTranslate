@@ -134,6 +134,11 @@ int TranslateToLabelNumber ( std::string labelNameInfo , std::string labelNumber
                     outputFile << labelMap[newlabel]<<"\n" ;
                 }
                 getline( inputFile , labelLine ) ;
+                while( labelLine[0] == '#' )
+                {
+                     getline( inputFile , labelLine ) ;
+                }
+
             }while( !inputFile.eof() ) ;
 
         }
@@ -214,6 +219,10 @@ int CreateSurfaceLabelFiles ( std::string vtkFile , std::string labelNumberInfo 
 
             }
             getline( inputFile , labelLine ) ;
+            while( labelLine[0] == '#' )
+            {
+                 getline( inputFile , labelLine ) ;
+            }
         }while( !inputFile.eof() ) ;
     }
     else
@@ -259,6 +268,10 @@ int CreateSurfaceLabelFiles ( std::string vtkFile , std::string labelNumberInfo 
             }
             index->InsertNextValue( valIndex ) ;
             getline( inputFile , labelLine ) ;
+            while( labelLine[0] == '#' )
+            {
+                 getline( inputFile , labelLine ) ;
+            }
         }
     }
     else
@@ -429,10 +442,6 @@ std::map <std::string , int> ReadLabelTranslationTable ( std::string labelTransl
     std::map <std::string , int> labelTranslationMap ;
     if( inputFile.good() )
     {
-        //        do
-        //        {
-        //            getline( inputFile , labelInfo ,' ' ) ; //get information line
-        //        }while( labelInfo[0] == '#' ) ;
         do
         {
             getline( inputFile , labelInfo ) ; //get information line
@@ -471,6 +480,10 @@ std::map <std::string , int> ReadLabelTranslationTable ( std::string labelTransl
             int labelNumber = atoi(Number.c_str()) ;
             labelTranslationMap[LabelName] = labelNumber ;
             getline( inputFile , labelInfo ) ;
+            while( labelInfo[0] == '#' )
+            {
+                 getline( inputFile , labelInfo ) ;
+            }
         }while( !inputFile.eof() ) ;
     }
     else
