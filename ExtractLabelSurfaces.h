@@ -20,6 +20,11 @@
 
 #include <vtksys/SystemTools.hxx> // for MakeDirectory()
 
+struct LabelIds {
+  int labelNumber;
+  std::string labelTextName;
+};
+
 int ExtractPointData ( std::string vtkLabelFile , std::string labelNameInfo , std::string arrayName ) ;
 
 int TranslateToLabelNumber ( std::string labelNameInfo , std::string labelNumberInfo , bool useTranslationTable , std::string labelTranslationTable, std::string ignoreLabel ) ;
@@ -28,7 +33,7 @@ int CreateSurfaceLabelFiles ( std::string vtkFile , std::string labelNumberInfo 
 
 int GetNumberIgnored (std::string ignoreLabel, std::string labelTranslationTable );
 
-std::map < std::string, int >  ReadLabelTranslationTable ( std::string labelTranslationTable ) ;
+std::map < std::string, LabelIds >  ReadLabelTranslationTable ( std::string labelTranslationTable ) ;
 
 vtkSmartPointer <vtkPolyData> ReadVTKFile ( std::string vtkFile ) ;
 

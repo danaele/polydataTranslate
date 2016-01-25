@@ -2,6 +2,8 @@
 
 /*ExtractLabelSurfaces program*/
 
+typedef struct LabelIds label;
+
 //Tool 1 : ExtractPointData label from a vtkfile -> create a file containing the label name/value for each point
 int ExtractPointData ( std::string vtkLabelFile , std::string labelNameInfo , std::string arrayName )
 {
@@ -81,9 +83,9 @@ int TranslateToLabelNumber ( std::string labelNameInfo , std::string labelNumber
 
     std::string labelLine ;
     //Define map containing labels and a list of points associated to them
-    std::map <std::string , int> labelMap ;
+    std::map <std::string , label> labelMap ;
     //Map iterator
-    std::map <std::string , int >::const_iterator mit,mend ;
+    std::map <std::string , label >::const_iterator mit,mend ;
     std::vector <std::pair <int , std::string> > labelPair ;
     std::vector <std::pair <int , std::string> >::const_iterator vit,vend ;
 
@@ -92,25 +94,6 @@ int TranslateToLabelNumber ( std::string labelNameInfo , std::string labelNumber
     {
         std::cout<<"Use a translation table"<<std::endl ;
         labelMap=ReadLabelTranslationTable( labelTranslationTable );
-
-        /*//Write matching table between labels names and labels numbers
-        std::ofstream logFileName ;
-        logFileName.open( "LabelNameOrdered.txt" , std::ios::out ) ;
-
-        if( logFileName.good() )
-        {
-            logFileName << "Labels names ordered by creation order \n" ;
-            for( mit = labelMap.begin() , mend = labelMap.end() ; mit != mend ; ++mit )
-            {
-                logFileName << mit->second <<std::endl;
-            }
-        }
-        else
-        {
-            std::cout << "Cannot open logFileName" << labelNumberInfo << std::endl ;
-            return EXIT_FAILURE ;
-        }
-        logFileName.close();*/
 
         if(labelMap.empty())
         {
@@ -140,18 +123,18 @@ int TranslateToLabelNumber ( std::string labelNameInfo , std::string labelNumber
                 {
                     if( labelMap.find(labelLine) != labelMap.end() )
                     {
-                        outputFile << labelMap[newlabel]<<"\n" ;
+                        outputFile << labelMap[newlabel].labelNumber<<"\n" ;
                     }
                     else
                     {
                         labelNumber++ ;
-                        labelMap[newlabel] = labelNumber ;
-                        outputFile << labelMap[newlabel] << "\n" ;
+                        labelMap[newlabel].labelNumber = labelNumber ;
+                        outputFile << labelMap[newlabel].labelNumber << "\n" ;
                     }
                 }
                 else
                 {
-                    outputFile << labelMap[newlabel]<<"\n" ;
+                    outputFile << labelMap[newlabel].labelNumber<<"\n" ;
                 }
                 getline( inputFile , labelLine ) ;
                 while( labelLine[0] == '#' )
@@ -178,36 +161,36 @@ int TranslateToLabelNumber ( std::string labelNameInfo , std::string labelNumber
     //Create a vector of pair in order to sort labels by value in the log file
     for( mit = labelMap.begin() , mend = labelMap.end() ; mit != mend ; ++mit )
     {
-        labelPair.push_back( std::make_pair( mit->second , mit->first ) ) ;
+        labelPair.push_back( std::make_pair( mit->second.labelNumber , mit->first ) ) ;
     }
     std::sort( labelPair.begin() , labelPair.end() ) ;
 
     int nbIgnored;
     if(ignoreLabel.size() > 0 )
     {
-       std::cout << "  Label " << ignoreLabel<<" is ignored"<< std::endl ;
        nbIgnored = GetNumberIgnored(ignoreLabel,labelTranslationTable);
-       std::cout<<nbIgnored<<std::endl;
-
+       std::cout<<"Label "<<ignoreLabel<<" is ignored in the logLabelTable.csv file"<<std::endl;
     }
     //Write matching table between labels RGB and labels numbers
     std::ofstream logFileRGB ;
-    logFileRGB.open( "logLabelTableRGB" , std::ios::out ) ;
+    logFileRGB.open( "logLabelTable.csv" , std::ios::out ) ;
 
     if( logFileRGB.good() )
     {
-        logFileRGB << "Matching table between labels RGB color and labels numbers \n" ;
+        //logFileRGB << "#Matching table between labels value  and labels numbers for surfaces created \n" ;
+        logFileRGB << "numberSurface,labelValue,labelName\n" ;
         for( vit = labelPair.begin() , vend = labelPair.end() ; vit != vend ; ++vit )
         {
-            if(vit->first != nbIgnored)
+             if(vit->first != nbIgnored)
             {
-                logFileRGB << vit->first << ","<< vit->second << "\n" ;
+                mit = labelMap.find(vit->second);
+                logFileRGB << vit->first << ","<< vit->second <<  "," << mit->second.labelTextName <<"\n" ;
             }
         }
     }
     else
     {
-        std::cout << "Cannot open logFileRGB" << labelNumberInfo << std::endl ;
+        std::cout << "Cannot open logFileRGB" << labelNumberInfo <<std::endl ;
         return EXIT_FAILURE ;
     }
     logFileRGB.close();
@@ -221,13 +204,11 @@ int TranslateToLabelNumber ( std::string labelNameInfo , std::string labelNumber
 int CreateSurfaceLabelFiles ( std::string vtkFile , std::string labelNumberInfo , std::string prefix, bool overlapping, std::string  ignoreLabel,  std::string labelTranslationTable)
 {
     std::cout << "Start CreateSurfaceLabelFiles..." << std::endl ;
-    std::cout<<ignoreLabel.size()<<std::endl;
     int nbIgnored = 0;
     if(ignoreLabel.size() > 0 )
     {
-        std::cout << "  Label " << ignoreLabel<<" is ignored"<< std::endl ;
+        std::cout << "Label " << ignoreLabel<<" is ignored"<< std::endl ;
        nbIgnored = GetNumberIgnored(ignoreLabel,labelTranslationTable);
-       std::cout<<nbIgnored<<std::endl;
 
     }
     //Read labelInformation file
@@ -339,13 +320,9 @@ int CreateSurfaceLabelFiles ( std::string vtkFile , std::string labelNumberInfo 
         //Threshold points
         std::string labelNumberTxt = *it_labelVect;        
         int labelNumber = atoi(labelNumberTxt.c_str());
-         std::cout<<"ECHO1 "<<labelNumber<<std::endl;
-         std::cout<<"ECHO2 "<<nbIgnored<<std::endl;
 
         if(labelNumber != nbIgnored)
         {
-            std::cout<<"ECHO "<<*it_labelVect<<std::endl;
-
         vtkSmartPointer <vtkThresholdPoints> thresholdPoints= vtkSmartPointer <vtkThresholdPoints>::New() ;
         thresholdPoints->SetInputData(polyData) ;
         thresholdPoints->ThresholdBetween(labelNumber-0.5,labelNumber+0.5) ;
@@ -477,15 +454,14 @@ int CreateSurfaceLabelFiles ( std::string vtkFile , std::string labelNumberInfo 
     return EXIT_SUCCESS ;
 }
 
-std::map <std::string , int> ReadLabelTranslationTable ( std::string labelTranslationTable )
+std::map <std::string , label> ReadLabelTranslationTable ( std::string labelTranslationTable )
 {
     //Read labelInformation file
     std::ifstream inputFile ;
     inputFile.open( labelTranslationTable.c_str() , std::ios::in ) ;
     std::string labelInfo;
     std::string::iterator str_it, str_end;
-    std::map <std::string , int> labelTranslationMapNumber ;
-    std::map <std::string , std::string> labelTranslationMapTextName ;
+    std::map <std::string , label> labelTranslationMap ;
     if( inputFile.good() )
     {
         do
@@ -524,8 +500,9 @@ std::map <std::string , int> ReadLabelTranslationTable ( std::string labelTransl
                 }
             }
             int labelNumber = atoi(Number.c_str()) ;
-            labelTranslationMapNumber[LabelName] = labelNumber ;
-            labelTranslationMapTextName[LabelName] = TextName ;
+            labelTranslationMap[LabelName].labelNumber = labelNumber ;
+            labelTranslationMap[LabelName].labelTextName = TextName ;
+
 
             getline( inputFile , labelInfo ) ;
             while( labelInfo[0] == '#' )
@@ -540,24 +517,26 @@ std::map <std::string , int> ReadLabelTranslationTable ( std::string labelTransl
     }
     inputFile.close() ;
 
-    //Read Map
-    std::map <std::string , int>::const_iterator it, end ;
-    for( it = labelTranslationMapNumber.begin() , end = labelTranslationMapNumber.end() ; it != end ; ++it )
-    {
-        std::cout<< it->first << " : " << it->second << std::endl ;
-    }
-    return labelTranslationMapNumber ;
+//    //Read Map
+//    std::map <std::string , label>::const_iterator itS, endS ;
+//    for( itS = labelTranslationMap.begin() , endS = labelTranslationMap.end() ; itS != endS ; ++itS )
+//    {
+//        std::cout<< itS->first << " , " << itS->second.labelNumber << " , " << itS->second.labelTextName << std::endl ;
+//    }
+
+    return labelTranslationMap ;
+
 }
 
 
 int GetNumberIgnored (std::string ignoreLabel, std::string labelTranslationTable)
 {
     int ignoreNumber;
-    std::map <std::string , int> labelTranslationMap ;
-    std::map <std::string , int>::const_iterator it, end ;
+    std::map <std::string , label> labelTranslationMap ;
+    std::map <std::string , label>::const_iterator it, end ;
     labelTranslationMap = ReadLabelTranslationTable(labelTranslationTable);
     it = labelTranslationMap.find(ignoreLabel);
-    ignoreNumber = it->second;
+    ignoreNumber = it->second.labelNumber;
     return ignoreNumber ;
 }
 
