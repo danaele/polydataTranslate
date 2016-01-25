@@ -12,6 +12,16 @@
   <parameters>
 	  <label>IO</label>
 	  <description>Input/Output parameters</description>  
+	  
+	  
+	  <string>
+	    <name>ignoreLabel</name>
+		  <label>ignoreLabel</label>
+		  <flag>i</flag>
+		  <longflag>ignoreLabel</longflag>
+		  <default></default>
+		  <description>Ignore the label Name specify - this label won't be created (ex : -i "0 0 0"). MUST BE USE WITH OPTION --useTranslationTable AND --labelTranslationTable</description>
+		</string> 
   
     <string>
 	    <name>prefix</name>
