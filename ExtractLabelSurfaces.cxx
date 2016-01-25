@@ -70,7 +70,7 @@ int ExtractPointData ( std::string vtkLabelFile , std::string labelNameInfo , st
 }
 
 //Tool 2 : TranslateToLabelNumber -> create a file containing the label number for each point
-int TranslateToLabelNumber ( std::string labelNameInfo , std::string labelNumberInfo , bool useTranslationTable , std::string labelTranslationTable )
+int TranslateToLabelNumber ( std::string labelNameInfo , std::string labelNumberInfo , bool useTranslationTable , std::string labelTranslationTable, std::string ignoreLabel )
 {
     std::cout << "Start TranslateToLabelNumber..." << std::endl ;
 
@@ -182,7 +182,14 @@ int TranslateToLabelNumber ( std::string labelNameInfo , std::string labelNumber
     }
     std::sort( labelPair.begin() , labelPair.end() ) ;
 
+    int nbIgnored;
+    if(ignoreLabel.size() > 0 )
+    {
+       std::cout << "  Label " << ignoreLabel<<" is ignored"<< std::endl ;
+       nbIgnored = GetNumberIgnored(ignoreLabel,labelTranslationTable);
+       std::cout<<nbIgnored<<std::endl;
 
+    }
     //Write matching table between labels RGB and labels numbers
     std::ofstream logFileRGB ;
     logFileRGB.open( "logLabelTableRGB" , std::ios::out ) ;
@@ -192,7 +199,10 @@ int TranslateToLabelNumber ( std::string labelNameInfo , std::string labelNumber
         logFileRGB << "Matching table between labels RGB color and labels numbers \n" ;
         for( vit = labelPair.begin() , vend = labelPair.end() ; vit != vend ; ++vit )
         {
-            logFileRGB << vit->first << " : "<< vit->second << "\n" ;
+            if(vit->first != nbIgnored)
+            {
+                logFileRGB << vit->first << ","<< vit->second << "\n" ;
+            }
         }
     }
     else
@@ -474,7 +484,8 @@ std::map <std::string , int> ReadLabelTranslationTable ( std::string labelTransl
     inputFile.open( labelTranslationTable.c_str() , std::ios::in ) ;
     std::string labelInfo;
     std::string::iterator str_it, str_end;
-    std::map <std::string , int> labelTranslationMap ;
+    std::map <std::string , int> labelTranslationMapNumber ;
+    std::map <std::string , std::string> labelTranslationMapTextName ;
     if( inputFile.good() )
     {
         do
@@ -513,7 +524,9 @@ std::map <std::string , int> ReadLabelTranslationTable ( std::string labelTransl
                 }
             }
             int labelNumber = atoi(Number.c_str()) ;
-            labelTranslationMap[LabelName] = labelNumber ;
+            labelTranslationMapNumber[LabelName] = labelNumber ;
+            labelTranslationMapTextName[LabelName] = TextName ;
+
             getline( inputFile , labelInfo ) ;
             while( labelInfo[0] == '#' )
             {
@@ -529,11 +542,11 @@ std::map <std::string , int> ReadLabelTranslationTable ( std::string labelTransl
 
     //Read Map
     std::map <std::string , int>::const_iterator it, end ;
-    for( it = labelTranslationMap.begin() , end = labelTranslationMap.end() ; it != end ; ++it )
+    for( it = labelTranslationMapNumber.begin() , end = labelTranslationMapNumber.end() ; it != end ; ++it )
     {
         std::cout<< it->first << " : " << it->second << std::endl ;
     }
-    return labelTranslationMap ;
+    return labelTranslationMapNumber ;
 }
 
 
@@ -629,7 +642,7 @@ int main ( int argc, char *argv[] )
         if( !vtkLabelFile.empty() && !labelNameInfo.empty() && !labelNumberInfo.empty() && !arrayName.empty())
         {
             ExtractPointData( vtkLabelFile , labelNameInfo , arrayName ) ;
-            TranslateToLabelNumber( labelNameInfo , labelNumberInfo, useTranslationTable, labelTranslationTable ) ;
+            TranslateToLabelNumber( labelNameInfo , labelNumberInfo, useTranslationTable, labelTranslationTable, ignoreLabel ) ;
         }
         else
         {
@@ -643,7 +656,7 @@ int main ( int argc, char *argv[] )
         if( !vtkLabelFile.empty() && !labelNameInfo.empty() && !labelNumberInfo.empty() && !vtkFile.empty() && !arrayName.empty() )
         {
             ExtractPointData( vtkLabelFile , labelNameInfo , arrayName ) ;
-            TranslateToLabelNumber( labelNameInfo , labelNumberInfo, useTranslationTable, labelTranslationTable ) ;
+            TranslateToLabelNumber( labelNameInfo , labelNumberInfo, useTranslationTable, labelTranslationTable, ignoreLabel ) ;
             CreateSurfaceLabelFiles( vtkFile , labelNumberInfo , prefix , overlapping, ignoreLabel, labelTranslationTable ) ;
         }
         else
@@ -657,7 +670,7 @@ int main ( int argc, char *argv[] )
         std::cout << "Run TranslateToLabelNumber tool ...\n" << std::endl ;
         if( !labelNameInfo.empty() && !labelNumberInfo.empty() )
         {
-            TranslateToLabelNumber( labelNameInfo , labelNumberInfo, useTranslationTable, labelTranslationTable ) ;
+            TranslateToLabelNumber( labelNameInfo , labelNumberInfo, useTranslationTable, labelTranslationTable, ignoreLabel ) ;
         }
         else
         {
@@ -670,7 +683,7 @@ int main ( int argc, char *argv[] )
         std::cout << "Run TranslateToLabelNumber and CreateSurfaceLabelFiles tools ...\n" << std::endl ;
         if( !labelNameInfo.empty() && !labelNumberInfo.empty() && !vtkFile.empty() )
         {
-            TranslateToLabelNumber( labelNameInfo, labelNumberInfo, useTranslationTable, labelTranslationTable ) ;
+            TranslateToLabelNumber( labelNameInfo, labelNumberInfo, useTranslationTable, labelTranslationTable, ignoreLabel ) ;
             CreateSurfaceLabelFiles( vtkFile , labelNumberInfo , prefix , overlapping, ignoreLabel, labelTranslationTable ) ;
         }
         else
