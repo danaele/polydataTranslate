@@ -165,7 +165,7 @@ int TranslateToLabelNumber ( std::string labelNameInfo , std::string labelNumber
     }
     std::sort( labelPair.begin() , labelPair.end() ) ;
 
-    int nbIgnored;
+    int nbIgnored=0;
     if(ignoreLabel.size() > 0 )
     {
        nbIgnored = GetNumberIgnored(ignoreLabel,labelTranslationTable);
