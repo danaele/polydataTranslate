@@ -29,7 +29,7 @@ int ExtractPointData ( std::string vtkLabelFile , std::string labelNameInfo , st
 
 int TranslateToLabelNumber ( std::string labelNameInfo , std::string labelNumberInfo , bool useTranslationTable , std::string labelTranslationTable, std::string ignoreLabel ) ;
 
-int CreateSurfaceLabelFiles ( std::string vtkFile , std::string labelNumberInfo , std::string prefix , bool overlapping, std::string ignoreLabel,  std::string labelTranslationTable) ;
+int CreateSurfaceLabelFiles ( std::string vtkFile , std::string labelNumberInfo , std::string prefix , bool overlapping, std::string ignoreLabel, bool useTranslationTable, std::string labelTranslationTable) ;
 
 int GetNumberIgnored (std::string ignoreLabel, std::string labelTranslationTable );
 

@@ -165,11 +165,10 @@ int TranslateToLabelNumber ( std::string labelNameInfo , std::string labelNumber
     }
     std::sort( labelPair.begin() , labelPair.end() ) ;
 
-    int nbIgnored=0;
-    if(ignoreLabel.size() > 0 )
+    int nbIgnored;
+    if(ignoreLabel.size() > 0 && useTranslationTable==1)
     {
        nbIgnored = GetNumberIgnored(ignoreLabel,labelTranslationTable);
-       std::cout<<"Label "<<ignoreLabel<<" is ignored in the logLabelTable.csv file"<<std::endl;
     }
     //Write matching table between labels RGB and labels numbers
     std::ofstream logFileRGB ;
@@ -177,14 +176,22 @@ int TranslateToLabelNumber ( std::string labelNameInfo , std::string labelNumber
 
     if( logFileRGB.good() )
     {
-        //logFileRGB << "#Matching table between labels value  and labels numbers for surfaces created \n" ;
+        logFileRGB << "#Matching table between surfaces numbers, labels value and label Name\n" ;
         logFileRGB << "numberSurface,labelValue,labelName\n" ;
         for( vit = labelPair.begin() , vend = labelPair.end() ; vit != vend ; ++vit )
         {
              if(vit->first != nbIgnored)
             {
                 mit = labelMap.find(vit->second);
-                logFileRGB << vit->first << ","<< vit->second <<  "," << mit->second.labelTextName <<"\n" ;
+                if(useTranslationTable==0)
+                {
+                   std::string TextName = "undefined";
+                   logFileRGB << vit->first << ","<< vit->second <<  "," <<TextName <<"\n" ;
+                }
+                else
+                {
+                    logFileRGB << vit->first << ","<< vit->second <<  "," << mit->second.labelTextName <<"\n" ;
+                }
             }
         }
     }
@@ -196,16 +203,20 @@ int TranslateToLabelNumber ( std::string labelNameInfo , std::string labelNumber
     logFileRGB.close();
 
     std::cout << "Number of labels in table: " << labelNumber << std::endl ;
+    if(ignoreLabel.size() > 0 && useTranslationTable==1)
+    {
+        std::cout<<"Label "<<ignoreLabel<<" is ignored in the logLabelTable.csv file"<<std::endl;
+    }
     std::cout << "TranslateToLabelNumber Done !\n" << std::endl ;
     return EXIT_SUCCESS ;
 }
 
 //Tool 3 : CreateSurfaceLabelFiles -> create one ASCII file per label
-int CreateSurfaceLabelFiles ( std::string vtkFile , std::string labelNumberInfo , std::string prefix, bool overlapping, std::string  ignoreLabel,  std::string labelTranslationTable)
+int CreateSurfaceLabelFiles ( std::string vtkFile , std::string labelNumberInfo , std::string prefix, bool overlapping, std::string  ignoreLabel, bool useTranslationTable,  std::string labelTranslationTable)
 {
     std::cout << "Start CreateSurfaceLabelFiles..." << std::endl ;
     int nbIgnored = 0;
-    if(ignoreLabel.size() > 0 )
+    if(ignoreLabel.size() > 0 && useTranslationTable==1)
     {
         std::cout << "Label " << ignoreLabel<<" is ignored"<< std::endl ;
        nbIgnored = GetNumberIgnored(ignoreLabel,labelTranslationTable);
@@ -246,7 +257,7 @@ int CreateSurfaceLabelFiles ( std::string vtkFile , std::string labelNumberInfo 
     }
     else
     {
-        std::cout << "Cannot open the label file " << std::endl ;
+        std::cout << "Cannot open the label file2 " << std::endl ;
         return EXIT_FAILURE ;
     }
     inputFile.close() ;
@@ -295,7 +306,7 @@ int CreateSurfaceLabelFiles ( std::string vtkFile , std::string labelNumberInfo 
     }
     else
     {
-        std::cout << "Cannot open the label file " << std::endl ;
+        std::cout << "Cannot open the label file1 " << std::endl ;
         return EXIT_FAILURE ;
     }
     inputFile.close() ;
@@ -441,7 +452,7 @@ int CreateSurfaceLabelFiles ( std::string vtkFile , std::string labelNumberInfo 
         }
         else
         {
-            std::cout << "Cannot open the label file " << std::endl ;
+            std::cout << "Cannot open the label file3 " << std::endl ;
             return EXIT_FAILURE ;
         }
         outputFile.close() ;
@@ -513,7 +524,7 @@ std::map <std::string , label> ReadLabelTranslationTable ( std::string labelTran
     }
     else
     {
-        std::cout << "Cannot open the label file " << std::endl ;
+        std::cout << "Cannot open the label file4 " << std::endl ;
     }
     inputFile.close() ;
 
@@ -636,7 +647,7 @@ int main ( int argc, char *argv[] )
         {
             ExtractPointData( vtkLabelFile , labelNameInfo , arrayName ) ;
             TranslateToLabelNumber( labelNameInfo , labelNumberInfo, useTranslationTable, labelTranslationTable, ignoreLabel ) ;
-            CreateSurfaceLabelFiles( vtkFile , labelNumberInfo , prefix , overlapping, ignoreLabel, labelTranslationTable ) ;
+            CreateSurfaceLabelFiles( vtkFile , labelNumberInfo , prefix , overlapping, ignoreLabel, useTranslationTable, labelTranslationTable ) ;
         }
         else
         {
@@ -663,7 +674,7 @@ int main ( int argc, char *argv[] )
         if( !labelNameInfo.empty() && !labelNumberInfo.empty() && !vtkFile.empty() )
         {
             TranslateToLabelNumber( labelNameInfo, labelNumberInfo, useTranslationTable, labelTranslationTable, ignoreLabel ) ;
-            CreateSurfaceLabelFiles( vtkFile , labelNumberInfo , prefix , overlapping, ignoreLabel, labelTranslationTable ) ;
+            CreateSurfaceLabelFiles( vtkFile , labelNumberInfo , prefix , overlapping, ignoreLabel, useTranslationTable, labelTranslationTable ) ;
         }
         else
         {
@@ -676,7 +687,7 @@ int main ( int argc, char *argv[] )
         std::cout << "Run CreateSurfaceLabelFiles tool ...\n" << std::endl ;
         if( !labelNumberInfo.empty() && !vtkFile.empty() )
         {
-            CreateSurfaceLabelFiles( vtkFile , labelNumberInfo , prefix , overlapping, ignoreLabel, labelTranslationTable ) ;
+            CreateSurfaceLabelFiles( vtkFile , labelNumberInfo , prefix , overlapping, ignoreLabel, useTranslationTable, labelTranslationTable ) ;
         }
         else
         {
