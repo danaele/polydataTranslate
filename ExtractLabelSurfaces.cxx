@@ -92,12 +92,12 @@ int TranslateToLabelNumber ( std::string labelNameInfo , std::string labelNumber
     int labelNumber = 0 ;
     if (useTranslationTable == 1 )
     {
-        std::cout<<"Use a translation table"<<std::endl ;
+        std::cout<<"Use a translation table : "<<labelTranslationTable.c_str()<<std::endl ;
         labelMap=ReadLabelTranslationTable( labelTranslationTable );
 
         if(labelMap.empty())
         {
-            std::cout <<"Error of interpretation of the TableTranslation - check if TableTranslation file is correct" << std::endl ;
+            std::cout <<"Error of interpretation of the TableTranslation - check if : json file exists, or TableTranslation file is correct, or if can be open" << std::endl ;
             return EXIT_FAILURE ;
         }
         else
@@ -158,54 +158,16 @@ int TranslateToLabelNumber ( std::string labelNameInfo , std::string labelNumber
         return EXIT_FAILURE ;
     }
 
-    //Create a vector of pair in order to sort labels by value in the log file
-    for( mit = labelMap.begin() , mend = labelMap.end() ; mit != mend ; ++mit )
-    {
-        labelPair.push_back( std::make_pair( mit->second.labelNumber , mit->first ) ) ;
-    }
-    std::sort( labelPair.begin() , labelPair.end() ) ;
-
     int nbIgnored;
     if(ignoreLabel.size() > 0 && useTranslationTable==1)
     {
        nbIgnored = GetNumberIgnored(ignoreLabel,labelTranslationTable);
     }
-    //Write matching table between labels RGB and labels numbers
-    std::ofstream logFileRGB ;
-    logFileRGB.open( "logLabelTable.csv" , std::ios::out ) ;
 
-    if( logFileRGB.good() )
-    {
-        logFileRGB << "#Matching table between surfaces numbers, labels value and label Name\n" ;
-        logFileRGB << "numberSurface,labelValue,labelName\n" ;
-        for( vit = labelPair.begin() , vend = labelPair.end() ; vit != vend ; ++vit )
-        {
-             if(vit->first != nbIgnored)
-            {
-                mit = labelMap.find(vit->second);
-                if(useTranslationTable==0)
-                {
-                   std::string TextName = "undefined";
-                   logFileRGB << vit->first << ","<< vit->second <<  "," <<TextName <<"\n" ;
-                }
-                else
-                {
-                    logFileRGB << vit->first << ","<< vit->second <<  "," << mit->second.labelTextName <<"\n" ;
-                }
-            }
-        }
-    }
-    else
-    {
-        std::cout << "Cannot open logFileRGB" << labelNumberInfo <<std::endl ;
-        return EXIT_FAILURE ;
-    }
-    logFileRGB.close();
-
-    std::cout << "Number of labels in table: " << labelNumber << std::endl ;
+    std::cout << "Number of labels in the vtkfile: " << labelNumber << std::endl ;
     if(ignoreLabel.size() > 0 && useTranslationTable==1)
     {
-        std::cout<<"Label "<<ignoreLabel<<" is ignored in the logLabelTable.csv file"<<std::endl;
+        std::cout<<"Label "<<ignoreLabel<<" is ignored"<<std::endl;
     }
     std::cout << "TranslateToLabelNumber Done !\n" << std::endl ;
     return EXIT_SUCCESS ;
@@ -261,6 +223,7 @@ int CreateSurfaceLabelFiles ( std::string vtkFile , std::string labelNumberInfo 
         return EXIT_FAILURE ;
     }
     inputFile.close() ;
+
     // ReadFile vtkFile
     vtkSmartPointer <vtkPolyData> polyData = vtkSmartPointer <vtkPolyData>::New() ;
     polyData = ReadVTKFile( vtkFile ) ;
@@ -467,78 +430,68 @@ int CreateSurfaceLabelFiles ( std::string vtkFile , std::string labelNumberInfo 
 
 std::map <std::string , label> ReadLabelTranslationTable ( std::string labelTranslationTable )
 {
-    //Read labelInformation file
-    std::ifstream inputFile ;
-    inputFile.open( labelTranslationTable.c_str() , std::ios::in ) ;
-    std::string labelInfo;
-    std::string::iterator str_it, str_end;
+
+    // 1. Parse a JSON string into DOM.
+    FILE* fp = fopen(labelTranslationTable.c_str(), "r"); // non-Windows use "r"
+    char readBuffer[65536];
+
+    //Output Map containing all info about labels
     std::map <std::string , label> labelTranslationMap ;
-    if( inputFile.good() )
+    std::string name ;
+    int AAL_ID ;
+    std::string labelValue ;
+
+
+    if(fp == NULL)
     {
-        do
-        {
-            getline( inputFile , labelInfo ) ; //get information line
-        }while( labelInfo[0] == '#' ) ;
-        //Interpretation of the TranslationTable - must be construct like that "TextName[space]Number[space]labelName" at each line
-        //labelName can containing space
-        do
-        {
-            std::string TextName ;
-            std::string Number ;
-            std::string LabelName ;
-            int numberInfo=0 ;
-            for(str_it=labelInfo.begin() , str_end=labelInfo.end() ; str_it!=str_end ; ++str_it )
-            {
-
-                if(*str_it != ' ' && numberInfo < 2)
-                {
-                    if( numberInfo == 0 )
-                    {
-                        TextName += *str_it ;
-                    }
-                    else if( numberInfo == 1 )
-                    {
-                        Number += *str_it ;
-                    }
-                }
-                else if ( numberInfo == 2)
-                {
-                    LabelName += *str_it ;
-                }
-                else
-                {
-                    numberInfo++ ;
-                }
-            }
-            int labelNumber = atoi(Number.c_str()) ;
-            labelTranslationMap[LabelName].labelNumber = labelNumber ;
-            labelTranslationMap[LabelName].labelTextName = TextName ;
-
-
-            getline( inputFile , labelInfo ) ;
-            while( labelInfo[0] == '#' )
-            {
-                 getline( inputFile , labelInfo ) ;
-            }
-        }while( !inputFile.eof() ) ;
+        std::cout << "Cannot open the json translation table file " << std::endl ;
+        return labelTranslationMap;
     }
-    else
+    rapidjson::FileReadStream is(fp, readBuffer, sizeof(readBuffer));
+    rapidjson::Document document;
+    document.ParseStream(is);
+    fclose(fp);
+
+    assert(document.IsArray());
+
+    for (rapidjson::SizeType i = 0; i < document.Size(); i++)
     {
-        std::cout << "Cannot open the label file4 " << std::endl ;
-    }
-    inputFile.close() ;
+        assert(document[i].HasMember("name"));
+        assert(document[i]["name"].IsString());
+
+        assert(document[i].HasMember("AAL_ID"));
+        assert(document[i]["AAL_ID"].IsInt());
+
+        assert(document[i].HasMember("labelValue"));
+        assert(document[i]["labelValue"].IsString());
+
+        assert(document[i].HasMember("VisuHierarchy"));
+        assert(document[i]["VisuHierarchy"].IsString());
+
+        assert(document[i].HasMember("VisuOrder"));
+        assert(document[i]["VisuOrder"].IsInt());
+
+        assert(document[i].HasMember("MatrixRow"));
+        assert(document[i]["MatrixRow"].IsInt());
+
+        labelValue=document[i]["labelValue"].GetString();
+        AAL_ID = document[i]["AAL_ID"].GetInt();
+        name = document[i]["name"].GetString();
+
+        labelTranslationMap[labelValue].labelNumber = AAL_ID ;
+        labelTranslationMap[labelValue].labelTextName = name ;
+
+      }
 
 //    //Read Map
-//    std::map <std::string , label>::const_iterator itS, endS ;
-//    for( itS = labelTranslationMap.begin() , endS = labelTranslationMap.end() ; itS != endS ; ++itS )
-//    {
-//        std::cout<< itS->first << " , " << itS->second.labelNumber << " , " << itS->second.labelTextName << std::endl ;
-//    }
+//        std::map <std::string , label>::const_iterator itS, endS ;
+//        for( itS = labelTranslationMap.begin() , endS = labelTranslationMap.end() ; itS != endS ; ++itS )
+//        {
+//            std::cout<< itS->first << " , " << itS->second.labelNumber << " , " << itS->second.labelTextName << std::endl ;
+//        }
 
     return labelTranslationMap ;
-
 }
-
 
 int GetNumberIgnored (std::string ignoreLabel, std::string labelTranslationTable)
 {
@@ -550,8 +503,6 @@ int GetNumberIgnored (std::string ignoreLabel, std::string labelTranslationTable
     ignoreNumber = it->second.labelNumber;
     return ignoreNumber ;
 }
-
-
 
 vtkSmartPointer <vtkPolyData> ReadVTKFile ( std::string vtkFile )
 {
