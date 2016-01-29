@@ -3,6 +3,9 @@ cmake_minimum_required(VERSION 2.8)
 PROJECT(ExtractLabelSurfaces)
 option(BUILD_TESTING "Build the testing tree" OFF)
 
+find_package(RapidJSON REQUIRED)
+include_directories("${RAPIDJSON_INCLUDE_DIRS}")
+
 # Find SlicerExecutionModel
 find_package(SlicerExecutionModel REQUIRED)
 include(${SlicerExecutionModel_USE_FILE})

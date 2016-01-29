@@ -18,6 +18,15 @@
 #include <iterator>
 #include <ExtractLabelSurfacesCLP.h>
 
+#include "rapidjson/document.h"
+#include "rapidjson/writer.h"
+#include "rapidjson/stringbuffer.h"
+#include <iostream>
+#include "rapidjson/filereadstream.h"   // FileReadStream
+#include "rapidjson/encodedstream.h"    // EncodedInputStream
+#include <cstdio>
+
+
 #include <vtksys/SystemTools.hxx> // for MakeDirectory()
 
 struct LabelIds {
